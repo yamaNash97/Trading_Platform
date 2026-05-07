@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from .models import Stock
-from .services import seed_sample_prices
+from .services import COMMODITY_DEFINITIONS, import_alpha_vantage_commodity, seed_sample_prices
 
 
 class MarketDataTests(TestCase):
@@ -15,5 +15,24 @@ class MarketDataTests(TestCase):
         self.assertEqual(created_second, 0)
         self.assertEqual(stock.price_data.count(), 30)
         self.assertEqual(stock.symbol, 'MSFT')
+
+    def test_commodity_import_normalizes_close_only_series(self):
+        class FakeClient:
+            def commodity_history(self, definition):
+                return [{'date': '2026-05-01', 'price': '2300.25'}]
+
+        original_client = __import__('market_data.services', fromlist=['AlphaVantageClient']).AlphaVantageClient
+        services = __import__('market_data.services', fromlist=['AlphaVantageClient'])
+        services.AlphaVantageClient = lambda: FakeClient()
+        try:
+            stock, imported = import_alpha_vantage_commodity('GOLD')
+        finally:
+            services.AlphaVantageClient = original_client
+
+        price = stock.price_data.get()
+        self.assertEqual(imported, 1)
+        self.assertEqual(stock.name, COMMODITY_DEFINITIONS['GOLD']['name'])
+        self.assertEqual(price.open_price, price.close_price)
+        self.assertEqual(price.volume, 0)
 
 # Create your tests here.

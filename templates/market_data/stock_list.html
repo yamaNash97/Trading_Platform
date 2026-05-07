@@ -3,6 +3,7 @@
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
   <div><h1 class="h3 mb-1">Market Data</h1><div class="text-secondary">Stocks, OHLCV history, and latest quotes.</div></div>
+  <a class="btn btn-success" href="{% url 'market_data:import_commodities' %}"><i data-lucide="download"></i> Import commodities</a>
 </div>
 <div class="row g-3">
   <div class="col-lg-4">

@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import StockForm
 from .models import Stock
-from .services import import_alpha_vantage_daily, seed_sample_prices
+from .services import import_alpha_vantage_daily, import_default_commodities, seed_sample_prices
 
 
 @login_required
@@ -20,6 +20,18 @@ def stock_list(request):
         form = StockForm()
     stocks = Stock.objects.prefetch_related('price_data')
     return render(request, 'market_data/stock_list.html', {'form': form, 'stocks': stocks})
+
+
+@login_required
+def import_commodities(request):
+    try:
+        results = import_default_commodities()
+    except Exception as exc:
+        messages.error(request, f'Could not import commodities: {exc}')
+    else:
+        summary = ', '.join(f'{stock.symbol}: {imported}' for stock, imported in results)
+        messages.success(request, f'Commodity import complete. New rows: {summary}.')
+    return redirect('market_data:stock_list')
 
 
 @login_required

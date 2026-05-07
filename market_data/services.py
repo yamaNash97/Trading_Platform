@@ -7,11 +7,42 @@ import requests
 from django.conf import settings
 from django.utils import timezone
 
-from .models import PriceData
+from .models import PriceData, Stock
+
+
+COMMODITY_DEFINITIONS = {
+    'WTI': {
+        'name': 'Crude Oil WTI',
+        'exchange': 'Commodity',
+        'function': 'WTI',
+        'interval': 'daily',
+    },
+    'GOLD': {
+        'name': 'Gold Spot Price',
+        'exchange': 'Commodity',
+        'function': 'GOLD_SILVER_HISTORY',
+        'symbol': 'GOLD',
+        'interval': 'daily',
+    },
+    'NATURAL_GAS': {
+        'name': 'Natural Gas',
+        'exchange': 'Commodity',
+        'function': 'NATURAL_GAS',
+        'interval': 'daily',
+    },
+}
 
 
 def to_decimal(value):
     return Decimal(str(value)).quantize(Decimal('0.0001'))
+
+
+def commodity_row_value(row):
+    for key in ('value', 'price', 'close', '1. open', '4. close'):
+        value = row.get(key)
+        if value not in (None, '.', ''):
+            return value
+    return None
 
 
 def latest_price(stock):
@@ -46,6 +77,25 @@ class AlphaVantageClient:
             raise ValueError(message)
         return series
 
+    def commodity_history(self, definition):
+        if not self.api_key:
+            raise ValueError('ALPHA_VANTAGE_API_KEY is not configured.')
+        params = {
+            'function': definition['function'],
+            'interval': definition.get('interval', 'daily'),
+            'apikey': self.api_key,
+        }
+        if definition.get('symbol'):
+            params['symbol'] = definition['symbol']
+        response = requests.get(self.base_url, params=params, timeout=20)
+        response.raise_for_status()
+        payload = response.json()
+        data = payload.get('data')
+        if not data:
+            message = payload.get('Note') or payload.get('Information') or payload.get('Error Message') or 'No commodity data returned.'
+            raise ValueError(message)
+        return data
+
 
 def import_alpha_vantage_daily(stock, outputsize='compact'):
     series = AlphaVantageClient().daily(stock.symbol, outputsize=outputsize)
@@ -67,6 +117,53 @@ def import_alpha_vantage_daily(stock, outputsize='compact'):
         )
         imported += int(created)
     return imported
+
+
+def import_alpha_vantage_commodity(symbol):
+    key = symbol.upper().strip()
+    if key not in COMMODITY_DEFINITIONS:
+        raise ValueError(f'Unsupported commodity: {symbol}')
+
+    definition = COMMODITY_DEFINITIONS[key]
+    stock, _ = Stock.objects.get_or_create(
+        symbol=key,
+        defaults={
+            'name': definition['name'],
+            'exchange': definition['exchange'],
+            'currency': 'USD',
+        },
+    )
+    data = AlphaVantageClient().commodity_history(definition)
+    imported = 0
+
+    for row in data:
+        value = commodity_row_value(row)
+        if value is None:
+            continue
+        day = datetime.combine(date.fromisoformat(row['date']), time.min)
+        timestamp = timezone.make_aware(day, timezone.get_current_timezone())
+        price = to_decimal(value)
+        _, created = PriceData.objects.update_or_create(
+            stock=stock,
+            timestamp=timestamp,
+            defaults={
+                'open_price': price,
+                'high_price': price,
+                'low_price': price,
+                'close_price': price,
+                'volume': 0,
+                'source': f'alpha_vantage_{definition["function"].lower()}',
+            },
+        )
+        imported += int(created)
+    return stock, imported
+
+
+def import_default_commodities():
+    results = []
+    for symbol in ('WTI', 'GOLD', 'NATURAL_GAS'):
+        results.append(import_alpha_vantage_commodity(symbol))
+    return results
 
 
 def seed_sample_prices(stock, days=260):
