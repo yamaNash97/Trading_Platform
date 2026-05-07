@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Create account{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="panel form-panel">
+      <h1 class="h4 mb-3">Create account</h1>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn btn-success w-100" type="submit"><i data-lucide="user-plus"></i> Create account</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

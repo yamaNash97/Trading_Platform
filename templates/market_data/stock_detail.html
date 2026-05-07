@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ stock.symbol }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <div><h1 class="h3 mb-1">{{ stock.symbol }}</h1><div class="text-secondary">{{ stock.name }} {{ stock.exchange }}</div></div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'market_data:seed_prices' stock.pk %}"><i data-lucide="database"></i> Seed sample</a>
+    <a class="btn btn-success" href="{% url 'market_data:refresh_alpha_vantage' stock.pk %}"><i data-lucide="refresh-cw"></i> Alpha Vantage</a>
+  </div>
+</div>
+<div class="panel">
+  <h2 class="h5">Latest prices</h2>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th><th>Source</th></tr></thead>
+      <tbody>
+        {% for price in prices %}
+          <tr>
+            <td>{{ price.timestamp|date:"Y-m-d" }}</td>
+            <td>${{ price.open_price|floatformat:2 }}</td>
+            <td>${{ price.high_price|floatformat:2 }}</td>
+            <td>${{ price.low_price|floatformat:2 }}</td>
+            <td class="fw-semibold">${{ price.close_price|floatformat:2 }}</td>
+            <td>{{ price.volume }}</td>
+            <td>{{ price.source }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-secondary">No price data available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

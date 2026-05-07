@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Backtests{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div><h1 class="h3 mb-1">Backtests</h1><div class="text-secondary">Historical simulations with performance metrics.</div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="panel form-panel">
+      <h2 class="h5">Run backtest</h2>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn btn-success w-100" type="submit"><i data-lucide="play"></i> Run</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="panel">
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Strategy</th><th>Stock</th><th>Period</th><th>Final</th><th>Return</th><th>Trades</th><th></th></tr></thead>
+          <tbody>
+            {% for result in results %}
+              <tr>
+                <td class="fw-semibold">{{ result.strategy.name }}</td>
+                <td>{{ result.stock.symbol }}</td>
+                <td>{{ result.start_date }} to {{ result.end_date }}</td>
+                <td>${{ result.final_balance|floatformat:2 }}</td>
+                <td class="{% if result.total_return < 0 %}negative{% else %}positive{% endif %}">{{ result.total_return }}%</td>
+                <td>{{ result.number_of_trades }}</td>
+                <td class="text-end"><a class="btn btn-outline-secondary btn-sm" href="{% url 'backtesting:backtest_detail' result.pk %}"><i data-lucide="bar-chart-3"></i> Report</a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="text-secondary">No backtests have been run.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

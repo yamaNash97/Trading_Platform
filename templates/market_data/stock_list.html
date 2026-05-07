@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Market Data{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div><h1 class="h3 mb-1">Market Data</h1><div class="text-secondary">Stocks, OHLCV history, and latest quotes.</div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="panel form-panel">
+      <h2 class="h5">Add stock</h2>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn btn-success w-100" type="submit"><i data-lucide="plus"></i> Add and seed prices</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="panel">
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Symbol</th><th>Name</th><th>Exchange</th><th>Rows</th><th></th></tr></thead>
+          <tbody>
+            {% for stock in stocks %}
+              <tr>
+                <td class="fw-semibold">{{ stock.symbol }}</td>
+                <td>{{ stock.name }}</td>
+                <td>{{ stock.exchange|default:"-" }}</td>
+                <td>{{ stock.price_data.count }}</td>
+                <td class="text-end"><a class="btn btn-outline-secondary btn-sm" href="{% url 'market_data:stock_detail' stock.pk %}"><i data-lucide="line-chart"></i> Open</a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-secondary">Add a stock to start testing strategies.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

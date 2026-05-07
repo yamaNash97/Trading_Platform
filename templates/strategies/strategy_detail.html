@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ strategy.name }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div><h1 class="h3 mb-1">{{ strategy.name }}</h1><div class="text-secondary">{{ strategy.get_strategy_type_display }} for {{ strategy.stock.symbol }}</div></div>
+  <a class="btn btn-success" href="{% url 'backtesting:backtest_list' %}"><i data-lucide="play"></i> Run backtest</a>
+</div>
+<div class="row g-3">
+  <div class="col-md-4"><div class="metric"><div class="metric-label">Initial balance</div><div class="metric-value">${{ strategy.initial_balance|floatformat:2 }}</div></div></div>
+  <div class="col-md-4"><div class="metric"><div class="metric-label">Position size</div><div class="metric-value">{{ strategy.position_size_percent }}%</div></div></div>
+  <div class="col-md-4"><div class="metric"><div class="metric-label">Risk exits</div><div class="metric-value">{{ strategy.stop_loss_percent }} / {{ strategy.take_profit_percent }}%</div></div></div>
+</div>
+<div class="panel mt-3">
+  <h2 class="h5">Parameters</h2>
+  <div class="row">
+    <div class="col-sm-6 col-lg-3"><strong>Short MA</strong><div>{{ strategy.short_window }}</div></div>
+    <div class="col-sm-6 col-lg-3"><strong>Long MA</strong><div>{{ strategy.long_window }}</div></div>
+    <div class="col-sm-6 col-lg-3"><strong>RSI period</strong><div>{{ strategy.rsi_period }}</div></div>
+    <div class="col-sm-6 col-lg-3"><strong>RSI thresholds</strong><div>{{ strategy.rsi_buy_threshold }} / {{ strategy.rsi_sell_threshold }}</div></div>
+  </div>
+</div>
+{% endblock %}
