@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import requests
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
 
 from .models import PriceData, Stock
@@ -32,9 +33,21 @@ COMMODITY_DEFINITIONS = {
     },
 }
 
+ALPHA_VANTAGE_DAILY_TTL = 15 * 60
+ALPHA_VANTAGE_COMMODITY_TTL = 6 * 60 * 60
+
 
 def to_decimal(value):
     return Decimal(str(value)).quantize(Decimal('0.0001'))
+
+
+def alpha_vantage_daily_cache_key(symbol, outputsize):
+    return f'av_daily:{symbol.upper()}:{outputsize}'
+
+
+def alpha_vantage_commodity_cache_key(definition):
+    symbol = definition.get('symbol') or definition['function']
+    return f'av_commodity:{definition["function"]}:{symbol.upper()}'
 
 
 def commodity_row_value(row):
@@ -50,6 +63,20 @@ def latest_price(stock):
     return point.close_price if point else Decimal('0')
 
 
+def safe_cache_get(key):
+    try:
+        return cache.get(key)
+    except Exception:
+        return None
+
+
+def safe_cache_set(key, value, timeout):
+    try:
+        cache.set(key, value, timeout)
+    except Exception:
+        pass
+
+
 class AlphaVantageClient:
     base_url = 'https://www.alphavantage.co/query'
 
@@ -59,6 +86,11 @@ class AlphaVantageClient:
     def daily(self, symbol, outputsize='compact'):
         if not self.api_key:
             raise ValueError('ALPHA_VANTAGE_API_KEY is not configured.')
+        cache_key = alpha_vantage_daily_cache_key(symbol, outputsize)
+        cached_series = safe_cache_get(cache_key)
+        if cached_series is not None:
+            return cached_series
+
         response = requests.get(
             self.base_url,
             params={
@@ -75,11 +107,17 @@ class AlphaVantageClient:
         if not series:
             message = payload.get('Note') or payload.get('Error Message') or 'No daily time series returned.'
             raise ValueError(message)
+        safe_cache_set(cache_key, series, ALPHA_VANTAGE_DAILY_TTL)
         return series
 
     def commodity_history(self, definition):
         if not self.api_key:
             raise ValueError('ALPHA_VANTAGE_API_KEY is not configured.')
+        cache_key = alpha_vantage_commodity_cache_key(definition)
+        cached_data = safe_cache_get(cache_key)
+        if cached_data is not None:
+            return cached_data
+
         params = {
             'function': definition['function'],
             'interval': definition.get('interval', 'daily'),
@@ -94,6 +132,7 @@ class AlphaVantageClient:
         if not data:
             message = payload.get('Note') or payload.get('Information') or payload.get('Error Message') or 'No commodity data returned.'
             raise ValueError(message)
+        safe_cache_set(cache_key, data, ALPHA_VANTAGE_COMMODITY_TTL)
         return data
 
 

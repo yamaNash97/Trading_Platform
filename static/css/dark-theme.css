@@ -244,6 +244,24 @@ a:hover {
   line-height: 1.6;
 }
 
+.card.text-dark,
+.card.text-dark h1,
+.card.text-dark h2,
+.card.text-dark h3,
+.card.text-dark h4,
+.card.text-dark h5,
+.card.text-dark h6,
+.card.text-dark td,
+.card.text-dark th,
+.card.text-dark label {
+  color: var(--text-primary) !important;
+}
+
+.card.text-dark .text-secondary,
+.card.text-dark .form-text {
+  color: var(--text-secondary) !important;
+}
+
 /* ========================================
    BUTTONS
    ======================================== */
@@ -530,6 +548,200 @@ a:hover {
 }
 
 /* ========================================
+   MARKET CHART
+   ======================================== */
+
+.market-chart-card {
+  border-radius: 8px;
+}
+
+.market-chart-card:hover {
+  transform: none;
+}
+
+.market-chart-header {
+  position: relative;
+  z-index: 2;
+}
+
+.market-chart-title h2,
+.market-chart-title span,
+.market-chart-status,
+.market-chart-ohlc {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.market-chart-ohlc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.market-chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+
+.market-chart-controls .btn,
+.market-chart-refresh .form-select {
+  min-height: 2rem;
+}
+
+.market-chart-controls .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.375rem 0.65rem;
+  white-space: nowrap;
+}
+
+.market-chart-controls .btn svg {
+  flex: 0 0 auto;
+}
+
+.market-chart-controls .btn.active {
+  box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.2), 0 0 18px rgba(0, 212, 255, 0.18);
+}
+
+.market-chart-refresh {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.market-chart-refresh .form-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+}
+
+.market-chart-refresh .form-check-input {
+  margin-top: 0;
+  cursor: pointer;
+}
+
+.market-chart-refresh .form-select {
+  width: 5.35rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.market-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+  margin-bottom: 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  letter-spacing: 0;
+}
+
+.market-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  opacity: 0.48;
+  transition: opacity var(--transition-fast);
+}
+
+.market-legend-item.active {
+  opacity: 1;
+}
+
+.market-legend-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: var(--text-tertiary);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.market-legend-swatch.price {
+  background: #00d4ff;
+}
+
+.market-legend-swatch.volume {
+  background: rgba(46, 213, 115, 0.55);
+}
+
+.market-legend-swatch.ema {
+  background: #ffa502;
+}
+
+.market-legend-swatch.sma {
+  background: #8fdbff;
+}
+
+.market-legend-swatch.rsi {
+  background: #d8b4fe;
+}
+
+.market-legend-swatch.macd {
+  background: #2ed573;
+}
+
+.market-legend-swatch.bollinger {
+  background: #4dabf7;
+}
+
+.market-chart-shell {
+  position: relative;
+  width: 100%;
+  height: clamp(320px, 48vh, 500px);
+  min-height: 320px;
+  border: 1px solid rgba(45, 53, 70, 0.9);
+  border-radius: 8px;
+  background: #061f26;
+  overflow: hidden;
+}
+
+.market-chart-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.market-chart-canvas:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -3px;
+}
+
+.market-chart-status .badge {
+  letter-spacing: 0;
+}
+
+.market-chart-momentum {
+  font-variant-numeric: tabular-nums;
+}
+
+.market-chart-empty svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--accent-primary);
+}
+
+.btn.is-loading svg {
+  animation: chart-spin 0.9s linear infinite;
+}
+
+@keyframes chart-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
    PROGRESS BARS
    ======================================== */
 
@@ -718,6 +930,33 @@ a:hover {
 
   .trading-card {
     padding: 1rem;
+  }
+
+  .market-chart-controls {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .market-chart-controls .btn-group {
+    flex-wrap: wrap;
+  }
+
+  .market-chart-controls .btn {
+    flex: 1 1 auto;
+    min-width: 4.25rem;
+  }
+
+  .market-chart-refresh {
+    width: 100%;
+  }
+
+  .market-chart-shell {
+    height: 340px;
+    min-height: 340px;
+  }
+
+  .market-chart-status {
+    align-items: flex-start !important;
   }
 }
 

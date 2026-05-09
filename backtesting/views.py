@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from market_data.charting import chart_context
+from market_data.charting import chart_context, chart_request_options
 from strategies.models import Strategy
 
 from .forms import BacktestRunForm
@@ -56,7 +56,7 @@ def strategy_price_chart(request):
     if strategy is None:
         chart = {'stock': None, 'has_data': False, 'warning': 'Create an active strategy to load a chart.'}
     else:
-        chart = chart_context(strategy.stock, refresh_live=True)
+        chart = chart_context(strategy.stock, **chart_request_options(request, default_refresh_live=True))
     return render(request, 'market_data/_price_chart.html', {'chart': chart})
 
 
@@ -71,7 +71,7 @@ def result_price_chart(request, pk):
         result.stock,
         start_date=result.start_date,
         end_date=result.end_date,
-        refresh_live=True,
+        **chart_request_options(request, default_refresh_live=True),
     )
     return render(request, 'market_data/_price_chart.html', {'chart': chart})
 

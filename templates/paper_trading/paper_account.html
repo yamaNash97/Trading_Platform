@@ -22,7 +22,7 @@
     <div
       id="paper-price-chart"
       hx-get="{% url 'paper_trading:price_chart' %}"
-      hx-trigger="load, every 45s, change from:#id_stock"
+      hx-trigger="load, change from:#id_stock"
       hx-include="#id_stock"
       hx-swap="innerHTML"
     >

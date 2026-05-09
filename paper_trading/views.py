@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
-from market_data.charting import chart_context
+from market_data.charting import chart_context, chart_request_options
 from market_data.models import Stock
 
 from .forms import OrderForm
@@ -47,7 +47,7 @@ def price_chart(request):
     if stock is None:
         chart = {'stock': None, 'has_data': False, 'warning': 'Add a stock before loading the paper trading chart.'}
     else:
-        chart = chart_context(stock, refresh_live=True)
+        chart = chart_context(stock, **chart_request_options(request, default_refresh_live=True))
     return render(request, 'market_data/_price_chart.html', {'chart': chart})
 
 # Create your views here.

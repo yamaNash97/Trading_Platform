@@ -15,7 +15,7 @@
   id="backtest-result-price-chart"
   class="mb-3"
   hx-get="{% url 'backtesting:result_price_chart' result.pk %}"
-  hx-trigger="load, every 60s"
+  hx-trigger="load"
   hx-swap="innerHTML"
 >
   <div class="card bg-dark border-secondary text-light shadow-sm p-5 text-center">

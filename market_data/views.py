@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
+from .charting import chart_context, chart_request_options
 from .forms import StockForm
 from .models import Stock
 from .services import import_alpha_vantage_daily, import_default_commodities, seed_sample_prices
@@ -39,6 +40,13 @@ def stock_detail(request, pk):
     stock = get_object_or_404(Stock, pk=pk)
     prices = stock.price_data.order_by('-timestamp')[:90]
     return render(request, 'market_data/stock_detail.html', {'stock': stock, 'prices': prices})
+
+
+@login_required
+def stock_price_chart(request, pk):
+    stock = get_object_or_404(Stock, pk=pk)
+    chart = chart_context(stock, **chart_request_options(request))
+    return render(request, 'market_data/_price_chart.html', {'chart': chart})
 
 
 @login_required

@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Trading Simulator{% endblock %}</title>
   <link href="{% static 'css/bootstrap-5.3.3.min.css' %}" rel="stylesheet">
+  <link href="{% static 'css/dark-theme.css' %}" rel="stylesheet">
   {% block extra_head %}{% endblock %}
 </head>
 
@@ -50,8 +51,10 @@
   </main>
 
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{% static 'js/main.js' %}"></script>
   <script>
     function refreshLucideIcons() {
       window.lucide && lucide.createIcons({ attrs: { width: 16, height: 16 } });

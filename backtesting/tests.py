@@ -55,7 +55,9 @@ class BacktestEngineTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Line')
-        self.assertContains(response, 'EMA(50,0)')
+        self.assertContains(response, 'Candles')
+        self.assertContains(response, 'EMA(50)')
+        self.assertContains(response, 'SMA(20)')
         self.assertContains(response, 'RSI(14)')
 
 # Create your tests here.

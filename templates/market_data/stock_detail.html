@@ -8,6 +8,18 @@
     <a class="btn btn-success" href="{% url 'market_data:refresh_alpha_vantage' stock.pk %}"><i data-lucide="refresh-cw"></i> Alpha Vantage</a>
   </div>
 </div>
+<div
+  id="stock-price-chart"
+  class="mb-3"
+  hx-get="{% url 'market_data:stock_price_chart' stock.pk %}"
+  hx-trigger="load"
+  hx-swap="innerHTML"
+>
+  <div class="card bg-dark border-secondary text-light shadow-sm p-5 text-center">
+    <div class="spinner-border text-info mx-auto mb-3" role="status"></div>
+    <div>Loading chart...</div>
+  </div>
+</div>
 <div class="card border-0 shadow-sm p-3 text-dark">
   <h2 class="h5">Latest prices</h2>
   <div class="table-responsive">
