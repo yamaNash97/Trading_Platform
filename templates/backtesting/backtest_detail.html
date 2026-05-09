@@ -6,22 +6,24 @@
   <a class="btn btn-outline-secondary" href="{% url 'backtesting:backtest_list' %}"><i data-lucide="arrow-left"></i> Backtests</a>
 </div>
 <div class="row g-3 mb-3">
-  <div class="col-sm-6 col-xl-3"><div class="metric"><div class="metric-label">Initial</div><div class="metric-value">${{ result.initial_balance|floatformat:2 }}</div></div></div>
-  <div class="col-sm-6 col-xl-3"><div class="metric"><div class="metric-label">Final</div><div class="metric-value">${{ result.final_balance|floatformat:2 }}</div></div></div>
-  <div class="col-sm-6 col-xl-3"><div class="metric"><div class="metric-label">Return</div><div class="metric-value {% if result.total_return < 0 %}negative{% else %}positive{% endif %}">{{ result.total_return }}%</div></div></div>
-  <div class="col-sm-6 col-xl-3"><div class="metric"><div class="metric-label">Max drawdown</div><div class="metric-value">{{ result.max_drawdown }}%</div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Initial</div><div class="fs-3 fw-bold">${{ result.initial_balance|floatformat:2 }}</div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Final</div><div class="fs-3 fw-bold">${{ result.final_balance|floatformat:2 }}</div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Return</div><div class="fs-3 fw-bold {% if result.total_return < 0 %}text-danger{% else %}text-success{% endif %}">{{ result.total_return }}%</div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Max drawdown</div><div class="fs-3 fw-bold">{{ result.max_drawdown }}%</div></div></div>
 </div>
-<div class="panel mb-3">
+<div class="card border-0 shadow-sm p-3 mb-3 text-dark">
   <h2 class="h5">Equity curve</h2>
-  <div class="sparkline">
+  <div class="d-flex align-items-end gap-1 border-bottom pb-2">
     {% for point in result.equity_curve|slice:":80" %}
-      <span style="height: 45%"></span>
+      <div class="progress flex-fill" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar bg-success w-50"></div>
+      </div>
     {% empty %}
       <div class="text-secondary">No equity data.</div>
     {% endfor %}
   </div>
 </div>
-<div class="panel">
+<div class="card border-0 shadow-sm p-3 text-dark">
   <h2 class="h5">Trades</h2>
   <div class="table-responsive">
     <table class="table align-middle">
@@ -34,7 +36,7 @@
             <td>{{ trade.quantity|floatformat:4 }}</td>
             <td>${{ trade.entry_price|floatformat:2 }}</td>
             <td>${{ trade.exit_price|floatformat:2 }}</td>
-            <td class="{% if trade.pnl < 0 %}negative{% else %}positive{% endif %}">${{ trade.pnl|floatformat:2 }}</td>
+            <td class="{% if trade.pnl < 0 %}text-danger{% else %}text-success{% endif %}">${{ trade.pnl|floatformat:2 }}</td>
             <td>{{ trade.exit_reason }}</td>
           </tr>
         {% empty %}

@@ -8,7 +8,8 @@ class StockForm(forms.ModelForm):
         model = Stock
         fields = ('symbol', 'name', 'exchange', 'currency')
         widgets = {
-            'symbol': forms.TextInput(attrs={'placeholder': 'AAPL'}),
-            'name': forms.TextInput(attrs={'placeholder': 'Apple Inc.'}),
-            'exchange': forms.TextInput(attrs={'placeholder': 'NASDAQ'}),
+            'symbol': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'AAPL'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apple Inc.'}),
+            'exchange': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'NASDAQ'}),
+            'currency': forms.TextInput(attrs={'class': 'form-control'}),
         }

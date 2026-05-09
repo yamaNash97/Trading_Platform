@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="gridGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.03" />
+      <stop offset="50%" style="stop-color:#2ed573;stop-opacity:0.02" />
+      <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0.03" />
+    </linearGradient>
+    
+    <pattern id="gridPattern" x="50" y="50" width="50" height="50" patternUnits="userSpaceOnUse">
+      <rect width="50" height="50" fill="none" stroke="#00d4ff" stroke-width="0.5" opacity="0.1"/>
+    </pattern>
+    
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <animate id="chartAnim" attributeName="d" 
+      values="M 0,400 Q 150,350 300,400 T 600,400 T 900,350 T 1200,400 L 1200,800 L 0,800 Z;
+              M 0,380 Q 150,320 300,380 T 600,420 T 900,330 T 1200,380 L 1200,800 L 0,800 Z;
+              M 0,400 Q 150,350 300,400 T 600,400 T 900,350 T 1200,400 L 1200,800 L 0,800 Z"
+      dur="8s" repeatCount="indefinite"/>
+  </defs>
+  
+  <rect width="1200" height="800" fill="#0f1419"/>
+  
+  <!-- Grid pattern -->
+  <rect width="1200" height="800" fill="url(#gridPattern)"/>
+  
+  <!-- Animated gradient mesh -->
+  <rect width="1200" height="800" fill="url(#gridGradient)"/>
+  
+  <!-- Animated candlestick chart pattern -->
+  <g opacity="0.08">
+    <!-- Candles -->
+    <rect x="100" y="300" width="8" height="150" fill="#00d4ff" rx="2"/>
+    <line x1="104" y1="250" x2="104" y2="480" stroke="#00d4ff" stroke-width="2"/>
+    
+    <rect x="150" y="280" width="8" height="180" fill="#2ed573" rx="2"/>
+    <line x1="154" y1="200" x2="154" y2="500" stroke="#2ed573" stroke-width="2"/>
+    
+    <rect x="200" y="320" width="8" height="120" fill="#ff4757" rx="2"/>
+    <line x1="204" y1="280" x2="204" y2="480" stroke="#ff4757" stroke-width="2"/>
+    
+    <rect x="250" y="290" width="8" height="150" fill="#2ed573" rx="2"/>
+    <line x1="254" y1="220" x2="254" y2="490" stroke="#2ed573" stroke-width="2"/>
+    
+    <rect x="300" y="310" width="8" height="130" fill="#00d4ff" rx="2"/>
+    <line x1="304" y1="270" x2="304" y2="470" stroke="#00d4ff" stroke-width="2"/>
+    
+    <rect x="350" y="300" width="8" height="160" fill="#2ed573" rx="2"/>
+    <line x1="354" y1="240" x2="354" y2="500" stroke="#2ed573" stroke-width="2"/>
+    
+    <rect x="400" y="330" width="8" height="100" fill="#ff4757" rx="2"/>
+    <line x1="404" y1="300" x2="404" y2="460" stroke="#ff4757" stroke-width="2"/>
+    
+    <rect x="450" y="310" width="8" height="140" fill="#2ed573" rx="2"/>
+    <line x1="454" y1="260" x2="454" y2="480" stroke="#2ed573" stroke-width="2"/>
+  </g>
+  
+  <!-- Upward trending line with glow -->
+  <g filter="url(#glow)">
+    <polyline points="50,650 150,600 250,550 350,500 450,450 550,400 650,380 750,350 850,320 950,280 1050,250 1150,200" 
+              fill="none" stroke="#00d4ff" stroke-width="3" opacity="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Decorative circles (market nodes) -->
+  <circle cx="150" cy="600" r="3" fill="#00d4ff" opacity="0.4"/>
+  <circle cx="350" cy="500" r="3" fill="#2ed573" opacity="0.4"/>
+  <circle cx="550" cy="400" r="3" fill="#00d4ff" opacity="0.4"/>
+  <circle cx="750" cy="350" r="3" fill="#2ed573" opacity="0.4"/>
+  <circle cx="950" cy="280" r="3" fill="#00d4ff" opacity="0.4"/>
+  <circle cx="1100" cy="220" r="3" fill="#2ed573" opacity="0.4"/>
+  
+  <!-- Subtle radial gradients for depth -->
+  <defs>
+    <radialGradient id="glow1" cx="20%" cy="20%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.05" />
+      <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  <circle cx="300" cy="200" r="400" fill="url(#glow1)"/>
+  <circle cx="900" cy="600" r="500" fill="url(#glow1)"/>
+</svg>

@@ -1,0 +1,419 @@
+<!-- ========================================
+     PRODUCTION-READY BACKGROUND SOLUTION
+     Combine METHOD 1 + METHOD 7 for best results
+     ======================================== -->
+
+<!-- FILE: templates/base.html -->
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Trading Platform{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Dark Theme CSS -->
+    <link rel="stylesheet" href="{% static 'css/dark-theme.css' %}">
+    
+    <!-- Background CSS -->
+    <link rel="stylesheet" href="{% static 'css/backgrounds.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+
+<!-- Add appropriate class based on current page -->
+<body class="{% block body_class %}bg-default{% endblock %}">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="fas fa-chart-line"></i> Trading Platform
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard' %}">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'strategies:strategy_list' %}">
+                                <i class="fas fa-rocket"></i> Strategies
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'portfolio:portfolio' %}">
+                                <i class="fas fa-wallet"></i> Portfolio
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'backtesting:backtest_list' %}">
+                                <i class="fas fa-history"></i> Backtesting
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'signup' %}">Sign Up</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container-fluid px-4">
+        <div class="mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="py-4">
+        <div class="container-fluid px-4">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-top border-secondary mt-5 py-4 text-center text-secondary">
+        <div class="container-fluid">
+            <p class="mb-0">
+                <i class="fas fa-copyright"></i> 2024 Trading Platform
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+
+
+<!-- ========================================
+     FILE: templates/dashboard.html
+     ======================================== -->
+
+{% extends 'base.html' %}
+
+{% block body_class %}bg-dashboard{% endblock %}
+
+{% block title %}Dashboard - Trading Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Dashboard</h1>
+        <!-- Your dashboard content -->
+    </div>
+</div>
+{% endblock %}
+
+
+<!-- ========================================
+     FILE: templates/strategies/strategy_list.html
+     ======================================== -->
+
+{% extends 'base.html' %}
+
+{% block body_class %}bg-strategies{% endblock %}
+
+{% block title %}Strategies - Trading Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Strategies</h1>
+        <!-- Your strategies content -->
+    </div>
+</div>
+{% endblock %}
+
+
+<!-- ========================================
+     FILE: templates/portfolio.html
+     ======================================== -->
+
+{% extends 'base.html' %}
+
+{% block body_class %}bg-portfolio{% endblock %}
+
+{% block title %}Portfolio - Trading Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Portfolio</h1>
+        <!-- Your portfolio content -->
+    </div>
+</div>
+{% endblock %}
+
+
+<!-- ========================================
+     FILE: templates/backtesting/backtest_list.html
+     ======================================== -->
+
+{% extends 'base.html' %}
+
+{% block body_class %}bg-backtesting{% endblock %}
+
+{% block title %}Backtesting - Trading Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Backtesting</h1>
+        <!-- Your backtesting content -->
+    </div>
+</div>
+{% endblock %}
+
+
+<!-- ========================================
+     FILE: static/css/backgrounds.css
+     ======================================== -->
+
+/* Background Image Styling */
+
+body {
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Dashboard Background - Chart Pattern */
+body.bg-dashboard {
+    background-image: url('/static/images/bg-chart-pattern.svg');
+}
+
+/* Strategies Background - Market Network */
+body.bg-strategies {
+    background-image: url('/static/images/bg-market-network.svg');
+}
+
+/* Portfolio Background - Candlestick */
+body.bg-portfolio {
+    background-image: url('/static/images/bg-candlestick.svg');
+}
+
+/* Backtesting Background - Candlestick */
+body.bg-backtesting {
+    background-image: url('/static/images/bg-candlestick.svg');
+}
+
+/* Default Background - Market Network */
+body.bg-default {
+    background-image: url('/static/images/bg-market-network.svg');
+}
+
+/* Market Data Background - Chart Pattern */
+body.bg-market-data {
+    background-image: url('/static/images/bg-chart-pattern.svg');
+}
+
+/* Accounts Background - Default */
+body.bg-accounts {
+    background-image: url('/static/images/bg-market-network.svg');
+}
+
+/* Smooth transition when page changes (if using AJAX/Turbo) */
+@media (prefers-reduced-motion: no-preference) {
+    body {
+        transition: background-image 0.5s ease-in-out;
+    }
+}
+
+/* Ensure background is visible behind content */
+main {
+    position: relative;
+    z-index: 1;
+}
+
+
+<!-- ========================================
+     IMPLEMENTATION STEPS
+     ======================================== -->
+
+STEP 1: Create the backgrounds.css file
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Create: static/css/backgrounds.css
+Copy the CSS code above (everything between "FILE: static/css/backgrounds.css" and "IMPLEMENTATION STEPS")
+
+STEP 2: Add link to base template
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+In <head> of templates/base.html, add:
+<link rel="stylesheet" href="{% static 'css/backgrounds.css' %}">
+
+STEP 3: Update base template body tag
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Change:
+<body>
+
+To:
+<body class="{% block body_class %}bg-default{% endblock %}">
+
+STEP 4: Update all page templates
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+In each template (dashboard.html, strategies/strategy_list.html, etc.), add:
+
+{% block body_class %}bg-dashboard{% endblock %}
+
+Change the class name based on page:
+- Dashboard → bg-dashboard
+- Strategies → bg-strategies
+- Portfolio → bg-portfolio
+- Backtesting → bg-backtesting
+
+STEP 5: Run collectstatic
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+python manage.py collectstatic --noinput
+
+STEP 6: Test
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Visit each page and verify the background changes correctly.
+
+
+<!-- ========================================
+     WHY THIS APPROACH IS BETTER
+     ======================================== -->
+
+✅ BENEFITS:
+
+1. CLEAN SEPARATION OF CONCERNS
+   - Backgrounds are isolated in their own CSS file
+   - Easy to modify or update all backgrounds in one place
+
+2. MAINTAINABLE
+   - Uses CSS classes (Method 7)
+   - No complex template logic
+   - Single source of truth for styling
+
+3. FLEXIBLE
+   - Easy to add new pages/backgrounds
+   - Can swap SVGs without touching templates
+   - Can customize per user if needed
+
+4. PERFORMANT
+   - CSS class selection is instant
+   - Minimal JavaScript
+   - Backgrounds are cached by browser
+
+5. SCALABLE
+   - Add new background just by:
+     a) Creating new SVG file
+     b) Adding CSS class in backgrounds.css
+     c) Using {% block body_class %} in template
+
+6. ACCESSIBLE
+   - Respects prefers-reduced-motion
+   - Doesn't break without CSS
+   - Works with screen readers
+
+7. DEBUGGABLE
+   - Inspect element shows exact background
+   - No complex logic to trace
+   - Clear CSS rules
+
+
+<!-- ========================================
+     ADVANCED: DYNAMIC BACKGROUNDS
+     ======================================== -->
+
+If you want to change backgrounds dynamically (user preference, time of day, etc.):
+
+OPTION A: User Preference
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# In your User model
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    preferred_background = models.CharField(
+        max_length=20,
+        choices=[
+            ('chart', 'Chart Pattern'),
+            ('network', 'Market Network'),
+            ('candlestick', 'Candlestick'),
+        ],
+        default='network'
+    )
+
+# In base template
+<body class="bg-{{ user.profile.preferred_background|default:'default' }}">
+
+OPTION B: Based on Time
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# In your view
+import datetime
+
+def dashboard(request):
+    hour = datetime.datetime.now().hour
+    if 9 <= hour < 17:  # Market hours
+        bg_class = 'bg-chart-pattern'
+    else:
+        bg_class = 'bg-market-network'
+    
+    context = {'bg_class': bg_class}
+    return render(request, 'dashboard.html', context)
+
+# In template
+<body class="{{ bg_class }}">
+
+OPTION C: JavaScript-based (most flexible)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+See BACKGROUND_METHODS.html METHOD 6 for complete example
+
+
+<!-- ========================================
+     TESTING CHECKLIST
+     ======================================== -->
+
+□ Dashboard page shows chart pattern background
+□ Strategies page shows market network background
+□ Portfolio page shows candlestick background
+□ Backtesting page shows candlestick background
+□ Other pages show default (market network) background
+□ Backgrounds load without console errors
+□ Backgrounds are responsive on mobile
+□ No console warnings about missing files
+□ Static files collected successfully
+□ Works in production (DEBUG=False)

@@ -138,10 +138,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+    ]
 
 LOGIN_REDIRECT_URL = 'portfolio:dashboard'
-LOGOUT_REDIRECT_URL = 'login'
+LOGOUT_REDIRECT_URL = 'portfolio:landing'
 LOGIN_URL = 'login'
 
 ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY', 'C01BPJNDOO2MWFPH')

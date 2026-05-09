@@ -4,9 +4,9 @@ from strategies.models import Strategy
 
 
 class BacktestRunForm(forms.Form):
-    strategy = forms.ModelChoiceField(queryset=Strategy.objects.none())
-    start_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
-    end_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    strategy = forms.ModelChoiceField(queryset=Strategy.objects.none(), widget=forms.Select(attrs={'class': 'form-select'}))
+    start_date = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
+    end_date = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)

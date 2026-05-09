@@ -25,6 +25,13 @@ class StrategyForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if name == 'is_active':
+                field.widget.attrs.setdefault('class', 'form-check-input')
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs.setdefault('class', 'form-select')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
         if self.instance and self.instance.pk:
             params = self.instance.parameters or {}
             for field in ('short_window', 'long_window', 'rsi_period', 'rsi_buy_threshold', 'rsi_sell_threshold'):

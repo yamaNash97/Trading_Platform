@@ -1,0 +1,146 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+	<title>TradeSim</title>
+	<meta content="website" property="og:type">
+	<meta content="{% static 'landing/images/1_14403941_large.jpg' %}" property="og:image">
+	<meta content="TradeSim" property="og:title">
+	<meta content="Trading simulation tools with dashboards, segments, and real-time insights." name="description">
+	<meta charset="utf-8">
+	<meta content="width=device-width, initial-scale=1" name="viewport">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;display=swap"
+		rel="stylesheet" type="text/css">
+	<link href="{% static 'css/bootstrap-5.3.3.min.css' %}" rel="stylesheet">
+</head>
+
+<body class="text-light" style="background: #001f20;">
+	<header class="container py-3">
+		<div class="row align-items-center justify-content-between">
+			<!-- Logo Column -->
+			<div class="col-auto">
+				<a href="{% url 'portfolio:landing' %}">
+					<img alt="TradeSim Logo" class="img-fluid" src="{% static 'landing/images/5_TradeSimLogo.png' %}"
+						width="169">
+				</a>
+			</div>
+
+			<!-- Button Column -->
+			<div class="col-auto">
+				<a class="btn btn-outline-success" href="{% url 'login' %}">Login</a>
+			</div>
+		</div>
+	</header>
+
+	<main>
+		<!-- <section class="container pb-3">
+			<div class="d-flex flex-nowrap gap-3 overflow-auto py-2 border-top border-bottom border-secondary">
+				{% for commodity, price in prices.items %}
+				<span class="badge rounded-pill text-bg-success flex-shrink-0">{{ commodity }}: ${{ price }}</span>
+				{% endfor %}
+			</div>
+		</section> -->
+
+		<section class="container py-5">
+			<div class="row justify-content-center text-center">
+				<div class="col-12 col-lg-10">
+					<h1 class="display-3 fw-bold lh-1 mb-4">Strategize, Trade, <span class="text-success">Profit
+							$</span></h1>
+					<a class="btn btn-success btn-lg rounded-pill px-4 mb-5" href="{% url 'accounts:signup' %}">Join
+						Us!</a>
+					<img alt="Trading Dashboards" class="img-fluid rounded"
+						src="{% static 'landing/images/6_stock-market-chart-graph-options-6682491.jpg' %}">
+				</div>
+			</div>
+		</section>
+
+		<section class="container py-5">
+			<div class="row align-items-end g-4">
+				<div class="col-12 col-md-6 text-center text-md-start">
+					<h2 class="display-5 fw-normal mb-3">Automation<br><span class="text-success">is here.</span></h2>
+					<p class="lead mb-0">No need to worry anymore.</p>
+				</div>
+				<div class="col-12 col-md-6 text-center">
+					<img alt="DataSheet" class="img-fluid rounded" src="{% static 'landing/images/7_excelsheet.jpeg' %}"
+						width="290">
+				</div>
+			</div>
+		</section>
+
+		<section class="container py-5">
+			<div class="row justify-content-center">
+				<div class="col-12 col-lg-10">
+					<h2 class="h3 fw-semibold mb-4">What's in TRADESIM</h2>
+					<img alt="A screenshot of a smart segmentation" class="img-fluid rounded mb-4"
+						src="{% static 'landing/images/8_stock-trade-finance-business-5051154.jpg' %}">
+					<h2 class="h3 fw-semibold mb-3">Smart Segments</h2>
+					<p class="lead mb-0">Organize your data effortlessly with segmentation tools. TRADESIM automatically
+						groups users and behaviours with no manual setup required.</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="container pb-5">
+			<div class="row g-4">
+				<div class="col-12 col-md-6">
+					<img alt="A dashboard graph card" class="img-fluid rounded mb-4"
+						src="{% static 'landing/images/9_Group_7.png' %}" width="274">
+					<h2 class="h3 fw-semibold">Unified Dashboard</h2>
+					<p class="lead">All your metrics, flows, and automations in one place.</p>
+				</div>
+				<div class="col-12 col-md-6">
+					<img alt="A minimal round graph" class="img-fluid rounded mb-4"
+						src="{% static 'landing/images/10_RealTimeInsights.png' %}" width="274">
+					<h2 class="h3 fw-semibold">Real-Time Insights</h2>
+					<p class="lead">No refresh needed. Track performance live as it happens.</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="container py-5 d-none d-md-block">
+			<div class="row align-items-center g-4">
+				<div class="col-md-6 text-center">
+					<img alt="Samir Bacdounes" class="img-fluid rounded"
+						src="{% static 'landing/images/11_SyrianEagle.jpg' %}" width="210">
+				</div>
+				<div class="col-md-6">
+					<p class="text-success text-uppercase small fw-semibold">Testimonial</p>
+					<p class="fs-4 fw-light">"TRADESIM turned our chaos into clarity. We finally see everything in one
+						place."</p>
+					<p class="text-success mb-0">Samir Bacdounes.<br><em>Financial Advisor</em></p>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<footer class="container py-5">
+		<div class="row align-items-center g-4">
+			<div class="col-12 col-md-4 text-center text-md-start">
+				<a href="{% url 'portfolio:landing' %}">
+					<img alt="TradeSim Logo" class="img-fluid" src="{% static 'landing/images/12_image_1aa1fdca.png' %}"
+						width="169">
+				</a>
+			</div>
+			<div class="col-12 col-md-8">
+				<p class="small text-light mb-0">Options trading entails significant risk and is not
+					appropriate for all customers. Customers must read and understand the <a class="link-success"
+						href="https://cdn.robinhood.com/assets/robinhood/legal/Characteristics%20and%20Risks%20of%20Standardized%20Options.pdf"
+						rel="noopener" target="_blank">
+						Characteristics and Risks of Standardized Options</a> before
+					engaging in any options trading strategies. Options transactions are often complex and may involve
+					the potential of losing the entire investment in a relatively short period of time. Certain complex
+					options strategies carry additional risk, including the potential for losses that may exceed the
+					original investment amount.</p>
+			</div>
+		</div>
+		<hr class="border-secondary my-4">
+		<p class="small text-center text-light mb-0">&copy; Syrian Virtual University. All Rights
+			Reserved.<br>Yaman AlNashawati. Damascus, Syria</p>
+	</footer>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

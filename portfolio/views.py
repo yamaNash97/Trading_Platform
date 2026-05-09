@@ -7,6 +7,25 @@ from backtesting.models import BacktestResult
 from paper_trading.models import Transaction
 from paper_trading.services import get_or_create_account
 from portfolio.models import PortfolioHolding
+from market_data.models import Stock
+
+
+def landing(request):
+    prices = {}
+    for symbol in ('WTI', 'GOLD', 'NATURAL_GAS'):
+        stock = Stock.objects.filter(symbol=symbol).first()
+        latest = stock.price_data.order_by('-timestamp').first() if stock else None
+        if latest:
+            prices[symbol.replace('_', ' ')] = latest.close_price
+
+    if not prices:
+        prices = {
+            'WTI': '109.76',
+            'GOLD': '4590.07',
+            'NATURAL GAS': '2.67',
+        }
+
+    return render(request, 'landing/index.html', {'prices': prices})
 
 
 @login_required

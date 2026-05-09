@@ -1,0 +1,115 @@
+/* ========================================
+   TRADING PLATFORM - BACKGROUNDS CSS
+   Static/css/backgrounds.css
+   ======================================== */
+
+body {
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Dashboard Background - Chart Pattern */
+body.bg-dashboard {
+    background-image: url('/static/images/bg-chart-pattern.svg');
+}
+
+/* Strategies Background - Market Network */
+body.bg-strategies {
+    background-image: url('/static/images/bg-market-network.svg');
+}
+
+/* Portfolio Background - Candlestick */
+body.bg-portfolio {
+    background-image: url('/static/images/bg-candlestick.svg');
+}
+
+/* Backtesting Background - Candlestick */
+body.bg-backtesting {
+    background-image: url('/static/images/bg-candlestick.svg');
+}
+
+/* Market Data Background - Chart Pattern */
+body.bg-market-data {
+    background-image: url('/static/images/bg-chart-pattern.svg');
+}
+
+/* Accounts/Auth Background - Default */
+body.bg-accounts {
+    background-image: url('/static/images/bg-market-network.svg');
+}
+
+/* Default Background - Market Network */
+body.bg-default {
+    background-image: url('/static/images/bg-market-network.svg');
+}
+
+/* ========================================
+   TRANSITIONS & EFFECTS
+   ======================================== */
+
+/* Smooth background transition when changing pages */
+@media (prefers-reduced-motion: no-preference) {
+    body {
+        transition: background-image 0.5s ease-in-out;
+    }
+}
+
+/* Ensure main content is above background */
+main {
+    position: relative;
+    z-index: 1;
+}
+
+/* ========================================
+   DARK THEME INTEGRATION
+   ======================================== */
+
+/* Ensure text is readable over backgrounds */
+body {
+    color: var(--text-primary);
+}
+
+/* Darken backgrounds slightly for better contrast */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        135deg,
+        rgba(15, 20, 25, 0.95) 0%,
+        rgba(26, 31, 46, 0.95) 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Ensure all content is above the overlay */
+nav, main, footer {
+    position: relative;
+    z-index: 1;
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+
+@media (max-width: 768px) {
+    body {
+        background-attachment: scroll;
+    }
+}
+
+/* ========================================
+   REDUCED MOTION SUPPORT
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    body {
+        transition: none;
+    }
+}

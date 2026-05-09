@@ -6,7 +6,7 @@
 </div>
 <div class="row g-3">
   <div class="col-lg-4">
-    <div class="panel form-panel">
+    <div class="card border-0 shadow-sm p-3 text-dark">
       <h2 class="h5">Run backtest</h2>
       <form method="post">
         {% csrf_token %}
@@ -16,7 +16,7 @@
     </div>
   </div>
   <div class="col-lg-8">
-    <div class="panel">
+    <div class="card border-0 shadow-sm p-3 text-dark">
       <div class="table-responsive">
         <table class="table align-middle">
           <thead><tr><th>Strategy</th><th>Stock</th><th>Period</th><th>Final</th><th>Return</th><th>Trades</th><th></th></tr></thead>
@@ -27,7 +27,7 @@
                 <td>{{ result.stock.symbol }}</td>
                 <td>{{ result.start_date }} to {{ result.end_date }}</td>
                 <td>${{ result.final_balance|floatformat:2 }}</td>
-                <td class="{% if result.total_return < 0 %}negative{% else %}positive{% endif %}">{{ result.total_return }}%</td>
+                <td class="{% if result.total_return < 0 %}text-danger{% else %}text-success{% endif %}">{{ result.total_return }}%</td>
                 <td>{{ result.number_of_trades }}</td>
                 <td class="text-end"><a class="btn btn-outline-secondary btn-sm" href="{% url 'backtesting:backtest_detail' result.pk %}"><i data-lucide="bar-chart-3"></i> Report</a></td>
               </tr>

@@ -5,5 +5,7 @@ from . import views
 app_name = 'portfolio'
 
 urlpatterns = [
-    path('', views.dashboard, name='dashboard'),
+    path('', views.landing, name='landing'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    # path('signup/', views.signup, name='signup'),
 ]

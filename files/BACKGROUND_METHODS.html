@@ -1,0 +1,362 @@
+<!-- ========================================
+     METHOD 1: URL NAME MATCHING (RECOMMENDED)
+     Most reliable - uses Django's URL names
+     ======================================== -->
+
+<style>
+    {% if 'dashboard' in request.resolver_match.url_name %}
+    body {
+        background-image: url('{% static "images/bg-chart-pattern.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% elif 'strategies' in request.resolver_match.url_name %}
+    body {
+        background-image: url('{% static "images/bg-market-network.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% elif 'portfolio' in request.resolver_match.url_name %}
+    body {
+        background-image: url('{% static "images/bg-candlestick.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% elif 'backtesting' in request.resolver_match.url_name %}
+    body {
+        background-image: url('{% static "images/bg-candlestick.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% else %}
+    body {
+        background-image: url('{% static "images/bg-market-network.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% endif %}
+</style>
+
+
+<!-- ========================================
+     METHOD 2: IMPROVED PATH MATCHING
+     Uses better string comparison
+     ======================================== -->
+
+<style>
+    {% if request.path|startswith:"/dashboard" %}
+    body {
+        background-image: url('{% static "images/bg-chart-pattern.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% elif request.path|startswith:"/strategies" %}
+    body {
+        background-image: url('{% static "images/bg-market-network.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% elif request.path|startswith:"/portfolio" %}
+    body {
+        background-image: url('{% static "images/bg-candlestick.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% elif request.path|startswith:"/backtesting" %}
+    body {
+        background-image: url('{% static "images/bg-candlestick.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% elif request.path|startswith:"/market-data" %}
+    body {
+        background-image: url('{% static "images/bg-chart-pattern.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% else %}
+    body {
+        background-image: url('{% static "images/bg-market-network.svg" %}');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    {% endif %}
+</style>
+
+
+<!-- ========================================
+     METHOD 3: DATA ATTRIBUTE APPROACH
+     Cleaner template, uses custom data attribute
+     ======================================== -->
+
+<!-- Add to base template (outside <head>) -->
+{% if 'dashboard' in request.resolver_match.url_name %}
+    {% with bg_image="bg-chart-pattern" %}
+{% elif 'strategies' in request.resolver_match.url_name %}
+    {% with bg_image="bg-market-network" %}
+{% elif 'portfolio' in request.resolver_match.url_name %}
+    {% with bg_image="bg-candlestick" %}
+{% elif 'backtesting' in request.resolver_match.url_name %}
+    {% with bg_image="bg-candlestick" %}
+{% else %}
+    {% with bg_image="bg-market-network" %}
+{% endif %}
+    <body data-bg-image="{{ bg_image }}">
+    <!-- ... rest of template ... -->
+    {% endwith %}
+
+<!-- In <style> block -->
+<style>
+    body {
+        background-image: url('{% static "images/" %}' + this.dataset.bgImage + '.svg');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+</style>
+
+
+<!-- ========================================
+     METHOD 4: CONTEXT VARIABLE APPROACH
+     Most flexible - set in your views
+     ======================================== -->
+
+<!-- In your Django views.py -->
+"""
+def dashboard(request):
+    context = {
+        'bg_image': 'bg-chart-pattern',
+    }
+    return render(request, 'dashboard.html', context)
+
+def strategies(request):
+    context = {
+        'bg_image': 'bg-market-network',
+    }
+    return render(request, 'strategies.html', context)
+
+def portfolio(request):
+    context = {
+        'bg_image': 'bg-candlestick',
+    }
+    return render(request, 'portfolio.html', context)
+"""
+
+<!-- In your base template -->
+<style>
+    body {
+        {% if bg_image %}
+        background-image: url('{% static "images/" %}{{ bg_image }}.svg');
+        {% else %}
+        background-image: url('{% static "images/bg-market-network.svg" %}');
+        {% endif %}
+        background-size: cover;
+        background-attachment: fixed;
+    }
+</style>
+
+
+<!-- ========================================
+     METHOD 5: JAVASCRIPT-BASED (MOST FLEXIBLE)
+     Dynamic, can be changed without page reload
+     ======================================== -->
+
+<script>
+    // Get current page path
+    const currentPath = window.location.pathname;
+    
+    // Map paths to background images
+    const backgroundMap = {
+        '/dashboard/': 'bg-chart-pattern',
+        '/dashboard': 'bg-chart-pattern',
+        '/strategies/': 'bg-market-network',
+        '/strategies': 'bg-market-network',
+        '/portfolio/': 'bg-candlestick',
+        '/portfolio': 'bg-candlestick',
+        '/backtesting/': 'bg-candlestick',
+        '/backtesting': 'bg-candlestick',
+        '/market-data/': 'bg-chart-pattern',
+        '/market-data': 'bg-chart-pattern',
+    };
+    
+    // Find matching background
+    let bgImage = 'bg-market-network'; // default
+    
+    for (const [path, image] of Object.entries(backgroundMap)) {
+        if (currentPath.startsWith(path)) {
+            bgImage = image;
+            break;
+        }
+    }
+    
+    // Apply background
+    document.body.style.backgroundImage = 
+        `url('/static/images/${bgImage}.svg')`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundAttachment = 'fixed';
+</script>
+
+
+<!-- ========================================
+     METHOD 6: ENHANCED JAVASCRIPT
+     With smooth transition between pages
+     ======================================== -->
+
+<script>
+    class BackgroundManager {
+        constructor() {
+            this.backgroundMap = {
+                'dashboard': 'bg-chart-pattern',
+                'strategies': 'bg-market-network',
+                'portfolio': 'bg-candlestick',
+                'backtesting': 'bg-candlestick',
+                'market_data': 'bg-chart-pattern',
+            };
+            this.defaultBg = 'bg-market-network';
+            this.transitionDuration = 500; // ms
+            
+            this.init();
+        }
+        
+        init() {
+            this.setBackground();
+            // Listen for page changes (if using AJAX/turbo)
+            document.addEventListener('turbo:load', () => this.setBackground());
+        }
+        
+        getPageType() {
+            const path = window.location.pathname;
+            const segments = path.split('/').filter(Boolean);
+            return segments[0] || null;
+        }
+        
+        setBackground() {
+            const pageType = this.getPageType();
+            const bgImage = this.backgroundMap[pageType] || this.defaultBg;
+            
+            // Fade transition
+            document.body.style.opacity = '0.95';
+            
+            setTimeout(() => {
+                document.body.style.backgroundImage = 
+                    `url('/static/images/${bgImage}.svg')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundAttachment = 'fixed';
+                document.body.style.opacity = '1';
+            }, this.transitionDuration / 2);
+        }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        new BackgroundManager();
+    });
+</script>
+
+<style>
+    body {
+        transition: opacity 0.5s ease;
+    }
+</style>
+
+
+<!-- ========================================
+     METHOD 7: CSS CLASS-BASED APPROACH
+     Add class to body, use CSS for backgrounds
+     ======================================== -->
+
+<!-- In base template -->
+<body class="{% if 'dashboard' in request.resolver_match.url_name %}bg-dashboard{% elif 'strategies' in request.resolver_match.url_name %}bg-strategies{% elif 'portfolio' in request.resolver_match.url_name %}bg-portfolio{% elif 'backtesting' in request.resolver_match.url_name %}bg-backtesting{% else %}bg-default{% endif %}">
+    <!-- content -->
+</body>
+
+<!-- In dark-theme.css -->
+<style>
+    body.bg-dashboard {
+        background-image: url('/static/images/bg-chart-pattern.svg');
+    }
+    
+    body.bg-strategies {
+        background-image: url('/static/images/bg-market-network.svg');
+    }
+    
+    body.bg-portfolio {
+        background-image: url('/static/images/bg-candlestick.svg');
+    }
+    
+    body.bg-backtesting {
+        background-image: url('/static/images/bg-candlestick.svg');
+    }
+    
+    body.bg-default {
+        background-image: url('/static/images/bg-market-network.svg');
+    }
+    
+    /* Apply to all backgrounds */
+    body[class^="bg-"] {
+        background-size: cover;
+        background-attachment: fixed;
+    }
+</style>
+
+
+<!-- ========================================
+     COMPARISON & RECOMMENDATIONS
+     ======================================== -->
+
+/*
+METHOD 1: URL NAME MATCHING ⭐⭐⭐⭐⭐ RECOMMENDED
+✅ Most reliable - uses Django's actual URL names
+✅ Won't break if URL paths change
+✅ Handles all variations (with/without trailing slash)
+✅ Easy to maintain
+❌ Requires proper URL names in urls.py
+
+METHOD 2: IMPROVED PATH MATCHING ⭐⭐⭐⭐
+✅ Simple and straightforward
+✅ Works with current path
+❌ Breaks if URL structure changes
+❌ Doesn't handle trailing slashes consistently
+
+METHOD 3: DATA ATTRIBUTE ⭐⭐⭐
+✅ Clean separation of concerns
+✅ Flexible for variations
+❌ More template code
+❌ Still template-heavy
+
+METHOD 4: CONTEXT VARIABLE ⭐⭐⭐⭐⭐ BEST FOR FLEXIBILITY
+✅ Maximum flexibility in views
+✅ Can add logic for different users/preferences
+✅ Easy to test
+❌ Requires updates to all view functions
+
+METHOD 5: PURE JAVASCRIPT ⭐⭐⭐ GOOD FOR AJAX
+✅ Works with single-page apps
+✅ Can change backgrounds without page reload
+✅ No template complexity
+❌ Requires JavaScript enabled
+❌ Brief flash before background loads
+
+METHOD 6: ENHANCED JAVASCRIPT ⭐⭐⭐⭐ BEST FOR MODERN APPS
+✅ Smooth transitions
+✅ Works with Turbo/AJAX
+✅ Fully dynamic
+❌ More complex code
+❌ Requires JavaScript
+
+METHOD 7: CSS CLASSES ⭐⭐⭐⭐ CLEAN & SIMPLE
+✅ Clean CSS organization
+✅ Easy to maintain styles
+✅ Good performance
+❌ Template gets class attributes
+❌ No progressive enhancement
+
+RECOMMENDED COMBINATION:
+Use METHOD 1 (URL name matching) as primary
+Fall back to METHOD 5 (JavaScript) for dynamic page changes
+Style with METHOD 7 (CSS classes)
+
+This gives you:
+- Reliability (URL names)
+- Flexibility (JavaScript fallback)
+- Clean styling (CSS classes)
+*/
