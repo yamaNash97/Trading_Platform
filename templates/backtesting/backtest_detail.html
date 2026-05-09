@@ -11,6 +11,18 @@
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Return</div><div class="fs-3 fw-bold {% if result.total_return < 0 %}text-danger{% else %}text-success{% endif %}">{{ result.total_return }}%</div></div></div>
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Max drawdown</div><div class="fs-3 fw-bold">{{ result.max_drawdown }}%</div></div></div>
 </div>
+<div
+  id="backtest-result-price-chart"
+  class="mb-3"
+  hx-get="{% url 'backtesting:result_price_chart' result.pk %}"
+  hx-trigger="load, every 60s"
+  hx-swap="innerHTML"
+>
+  <div class="card bg-dark border-secondary text-light shadow-sm p-5 text-center">
+    <div class="spinner-border text-info mx-auto mb-3" role="status"></div>
+    <div>Loading live chart...</div>
+  </div>
+</div>
 <div class="card border-0 shadow-sm p-3 mb-3 text-dark">
   <h2 class="h5">Equity curve</h2>
   <div class="d-flex align-items-end gap-1 border-bottom pb-2">

@@ -1,5 +1,8 @@
+from unittest.mock import patch
+
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.urls import reverse
 
 from market_data.models import Stock
 from market_data.services import seed_sample_prices
@@ -24,5 +27,19 @@ class PaperTradingTests(TestCase):
         self.assertEqual(order.status, Order.Status.FILLED)
         self.assertEqual(holding.quantity, 1)
         self.assertLess(account.balance, account.starting_balance)
+
+    def test_price_chart_fragment_renders_indicators(self):
+        user = User.objects.create_user(username='paper-chart', password='test-pass-123')
+        stock = Stock.objects.create(symbol='TSLA', name='Tesla Inc.')
+        seed_sample_prices(stock, days=80)
+        self.client.login(username='paper-chart', password='test-pass-123')
+
+        with patch('market_data.charting.refresh_yfinance_prices', return_value=0):
+            response = self.client.get(reverse('paper_trading:price_chart'), {'stock': stock.pk})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Line')
+        self.assertContains(response, 'EMA(50,0)')
+        self.assertContains(response, 'RSI(14)')
 
 # Create your tests here.
