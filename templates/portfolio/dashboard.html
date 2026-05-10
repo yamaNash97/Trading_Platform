@@ -10,15 +10,15 @@
 </div>
 
 <div class="row g-3 mb-4">
-  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Cash balance</div><div class="fs-3 fw-bold">${{ account.balance|floatformat:2 }}</div></div></div>
-  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Portfolio value</div><div class="fs-3 fw-bold">${{ portfolio_value|floatformat:2 }}</div></div></div>
-  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Total account value</div><div class="fs-3 fw-bold">${{ total_value|floatformat:2 }}</div></div></div>
-  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100 text-dark"><div class="text-secondary small text-uppercase fw-semibold">Unrealized P/L</div><div class="fs-3 fw-bold {% if unrealized_pnl < 0 %}text-danger{% else %}text-success{% endif %}">${{ unrealized_pnl|floatformat:2 }}</div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Cash balance</div><div class="fs-3 fw-bold">${{ account.balance|floatformat:2 }}</div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Portfolio value</div><div class="fs-3 fw-bold">${{ portfolio_value|floatformat:2 }}</div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Total account value</div><div class="fs-3 fw-bold">${{ total_value|floatformat:2 }}</div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Unrealized P/L</div><div class="fs-3 fw-bold {% if unrealized_pnl < 0 %}text-danger{% else %}text-success{% endif %}">${{ unrealized_pnl|floatformat:2 }}</div></div></div>
 </div>
 
 <div class="row g-3">
   <div class="col-lg-7">
-    <div class="card border-0 shadow-sm p-3 h-100 text-dark">
+    <div class="card border-0 shadow-sm p-3 h-100">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h2 class="h5 mb-0">Open positions</h2>
         <a class="btn btn-outline-secondary btn-sm" href="{% url 'market_data:stock_list' %}"><i data-lucide="search"></i> Stocks</a>
@@ -44,7 +44,7 @@
     </div>
   </div>
   <div class="col-lg-5">
-    <div class="card border-0 shadow-sm p-3 mb-3 text-dark">
+    <div class="card border-0 shadow-sm p-3 mb-3">
       <h2 class="h5">Recent transactions</h2>
       <div class="table-responsive">
         <table class="table table-sm">
@@ -59,7 +59,7 @@
         </table>
       </div>
     </div>
-    <div class="card border-0 shadow-sm p-3 text-dark">
+    <div class="card border-0 shadow-sm p-3">
       <h2 class="h5">Latest backtests</h2>
       {% for result in backtests %}
         <div class="d-flex justify-content-between border-bottom py-2">

@@ -6,7 +6,7 @@
 </div>
 <div class="row g-3 mb-3">
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm p-3 text-dark">
+    <div class="card border-0 shadow-sm p-3">
       <h2 class="h5">Run backtest</h2>
       <form method="post">
         {% csrf_token %}
@@ -23,7 +23,7 @@
       hx-include="#id_strategy"
       hx-swap="innerHTML"
     >
-      <div class="card bg-dark border-secondary text-light shadow-sm p-5 text-center">
+      <div class="card bg-dark border-secondary shadow-sm p-5 text-center">
         <div class="spinner-border text-info mx-auto mb-3" role="status"></div>
         <div>Loading live chart...</div>
       </div>
@@ -31,7 +31,7 @@
   </div>
 </div>
 
-<div class="card border-0 shadow-sm p-3 text-dark">
+<div class="card border-0 shadow-sm p-3">
   <div class="table-responsive">
     <table class="table align-middle">
       <thead><tr><th>Strategy</th><th>Stock</th><th>Period</th><th>Final</th><th>Return</th><th>Trades</th><th></th></tr></thead>
