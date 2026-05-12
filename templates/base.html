@@ -13,8 +13,8 @@
   {% block extra_head %}{% endblock %}
 </head>
 
-<body class="text-light" style="background: #001f20;">
-  <nav class="navbar navbar-expand-lg bg-white">
+<body class="text-light app-shell">
+  <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
     <div class="container">
       <a class="navbar-brand fw-bold" href="{% url 'portfolio:dashboard' %}">TradSim</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
@@ -30,11 +30,11 @@
         </ul>
         <form method="post" action="{% url 'logout' %}" class="d-flex">
           {% csrf_token %}
-          <button class="btn btn-outline-secondary btn-sm" type="submit"><i data-lucide="log-out"></i> Sign out</button>
+          <button class="btn btn-outline-secondary btn-sm app-navbar-action" type="submit"><i data-lucide="log-out"></i> Sign out</button>
         </form>
         {% else %}
         <div class="ms-auto d-flex gap-2">
-          <a class="btn btn-outline-success btn-sm" href="{% url 'login' %}">Sign in</a>
+          <a class="btn btn-outline-success btn-sm app-navbar-action" href="{% url 'login' %}">Sign in</a>
         </div>
         {% endif %}
       </div>

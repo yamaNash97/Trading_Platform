@@ -11,6 +11,97 @@
   --chart-accent: #00d4ff;
 }
 
+.app-shell {
+  background: var(--chart-bg);
+}
+
+/* ========================================
+   App Navbar
+   ======================================== */
+
+.app-navbar {
+  background: rgba(0, 31, 32, 0.94);
+  border-bottom: 1px solid var(--chart-border);
+  box-shadow: 0 0.5rem 1.75rem rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+.app-navbar .navbar-brand {
+  color: var(--chart-text);
+  letter-spacing: 0;
+}
+
+.app-navbar .navbar-brand:hover,
+.app-navbar .navbar-brand:focus {
+  color: var(--chart-accent);
+}
+
+.app-navbar .nav-link {
+  color: var(--chart-muted);
+  border-radius: 0.375rem;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.app-navbar .nav-link:hover,
+.app-navbar .nav-link:focus,
+.app-navbar .nav-link.active,
+.app-navbar .nav-link[aria-current="page"] {
+  color: var(--chart-text);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.app-navbar .navbar-toggler {
+  border-color: var(--chart-border);
+}
+
+.app-navbar .navbar-toggler:focus {
+  box-shadow: 0 0 0 0.18rem rgba(0, 212, 255, 0.2);
+}
+
+.app-navbar-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.app-navbar .btn-outline-secondary {
+  color: var(--chart-muted);
+  border-color: var(--chart-border);
+}
+
+.app-navbar .btn-outline-secondary:hover,
+.app-navbar .btn-outline-secondary:focus {
+  color: var(--chart-bg);
+  background: var(--chart-accent);
+  border-color: var(--chart-accent);
+}
+
+.app-navbar .btn-outline-success {
+  color: #2ed573;
+  border-color: rgba(46, 213, 115, 0.5);
+}
+
+.app-navbar .btn-outline-success:hover,
+.app-navbar .btn-outline-success:focus {
+  color: var(--chart-bg);
+  background: #2ed573;
+  border-color: #2ed573;
+}
+
+@media (max-width: 991.98px) {
+  .app-navbar .navbar-collapse {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--chart-border);
+  }
+
+  .app-navbar .nav-link {
+    padding-inline: 0.75rem;
+  }
+}
+
 /* ========================================
    Market Chart
    ======================================== */
