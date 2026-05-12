@@ -31,7 +31,7 @@
           hx-get="{{ chart.stock_selector_url }}" hx-trigger="change" hx-target="closest [data-market-chart]"
           hx-swap="outerHTML" hx-include="this">
           {% for option in chart.stock_options %}
-          <option value="{{ option.pk }}" {% if option.pk==chart.selected_stock_id %}selected{% endif %}>
+          <option value="{{ option.pk }}" {% if option.pk == chart.selected_stock_id %}selected{% endif %}>
             {{ option.symbol }} - {{ option.name }}
           </option>
           {% endfor %}
