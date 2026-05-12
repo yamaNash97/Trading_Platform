@@ -40,8 +40,9 @@ class PaperTradingTests(TestCase):
             response = self.client.get(reverse('paper_trading:price_chart'), {'stock': microsoft.pk})
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Line')
-        self.assertContains(response, 'Candles')
+        self.assertNotContains(response, 'Candles')
+        self.assertNotContains(response, 'Bars')
+        self.assertNotContains(response, 'data-chart-view')
         self.assertContains(response, 'EMA(50)')
         self.assertContains(response, 'SMA(20)')
         self.assertContains(response, 'RSI(14)')

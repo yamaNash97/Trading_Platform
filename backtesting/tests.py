@@ -56,15 +56,16 @@ class BacktestEngineTests(TestCase):
             response = self.client.get(reverse('backtesting:strategy_price_chart'), {'stock': microsoft.pk})
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Line')
-        self.assertContains(response, 'Candles')
+        self.assertNotContains(response, 'Candles')
+        self.assertNotContains(response, 'Bars')
+        self.assertNotContains(response, 'data-chart-view')
         self.assertContains(response, 'EMA(50)')
         self.assertContains(response, 'SMA(20)')
         self.assertContains(response, 'RSI(14)')
         self.assertContains(response, 'name="stock"')
         self.assertContains(response, f'value="{stock.pk}"')
         self.assertContains(response, f'value="{microsoft.pk}" selected')
-        self.assertContains(response, '45s')
+        self.assertContains(response, '300s')
         self.assertNotContains(response, '{{ interval }}')
 
     def test_strategy_chart_fragment_handles_blank_strategy(self):

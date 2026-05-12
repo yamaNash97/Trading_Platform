@@ -232,7 +232,6 @@ function setupMarketChartCard(card) {
         card: card,
         payload: payload,
         chart: null,
-        view: 'line',
         indicators: {
             ema: true,
             rsi: false
@@ -338,54 +337,6 @@ function registerMarketChartPlugins() {
         }
     });
 
-    Chart.register({
-        id: 'marketCandlesticks',
-        afterDatasetsDraw(chart) {
-            const marketState = chart.$marketChart;
-            if (!marketState || marketState.view !== 'candlestick') {
-                return;
-            }
-
-            const rows = marketState.payload.rows;
-            const xScale = chart.scales.x;
-            const yScale = chart.scales.y;
-            const {ctx, chartArea} = chart;
-            const start = Math.max(0, Math.floor(marketState.visibleStart));
-            const end = Math.min(rows.length - 1, Math.ceil(marketState.visibleEnd));
-            const visibleCount = Math.max(end - start + 1, 1);
-            const candleWidth = Math.max(3, Math.min(14, chartArea.width / visibleCount * 0.58));
-
-            ctx.save();
-            for (let index = start; index <= end; index += 1) {
-                const row = rows[index];
-                if (!row) {
-                    continue;
-                }
-
-                const x = xScale.getPixelForValue(index);
-                const openY = yScale.getPixelForValue(row.open);
-                const closeY = yScale.getPixelForValue(row.close);
-                const highY = yScale.getPixelForValue(row.high);
-                const lowY = yScale.getPixelForValue(row.low);
-                const isUp = row.close >= row.open;
-                const color = isUp ? '#2ed573' : '#ff4757';
-                const bodyTop = Math.min(openY, closeY);
-                const bodyHeight = Math.max(Math.abs(openY - closeY), 1.5);
-
-                ctx.strokeStyle = color;
-                ctx.fillStyle = isUp ? 'rgba(46, 213, 115, 0.22)' : 'rgba(255, 71, 87, 0.28)';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.moveTo(x, highY);
-                ctx.lineTo(x, lowY);
-                ctx.stroke();
-                ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
-                ctx.strokeRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
-            }
-            ctx.restore();
-        }
-    });
-
     marketChartPluginsRegistered = true;
 }
 
@@ -426,16 +377,6 @@ function drawCrosshairValueLabel(ctx, chartArea, y, label) {
 
 function bindMarketChartControls(state) {
     const card = state.card;
-
-    card.querySelectorAll('[data-chart-view]').forEach(button => {
-        button.addEventListener('click', () => {
-            runMarketChartLocalUpdate(state, () => {
-                state.view = button.dataset.chartView;
-                setGroupedButtonActive(card.querySelectorAll('[data-chart-view]'), button);
-                applyMarketChartVisibility(state);
-            });
-        });
-    });
 
     card.querySelectorAll('[data-chart-toggle]').forEach(button => {
         button.addEventListener('click', () => {
@@ -518,18 +459,6 @@ function renderMarketChart(state) {
                         title(items) {
                             const row = rowFromTooltip(items[0], rows);
                             return row ? row.timestampLabel : '';
-                        },
-                        beforeBody(items) {
-                            const row = rowFromTooltip(items[0], rows);
-                            if (!row || state.view !== 'candlestick') {
-                                return [];
-                            }
-                            return [
-                                `Open: ${formatCurrency(row.open, currency)}`,
-                                `High: ${formatCurrency(row.high, currency)}`,
-                                `Low: ${formatCurrency(row.low, currency)}`,
-                                `Close: ${formatCurrency(row.close, currency)}`
-                            ];
                         },
                         label(context) {
                             return marketTooltipLabel(context, currency);
@@ -617,7 +546,6 @@ function renderMarketChart(state) {
 
 function buildMarketChartDatasets(rows) {
     const closeValues = rows.map(row => row.close);
-    const barColors = rows.map(row => row.close >= row.open ? 'rgba(46, 213, 115, 0.55)' : 'rgba(255, 71, 87, 0.55)');
     const volumeColors = rows.map(row => row.close >= row.open ? 'rgba(46, 213, 115, 0.18)' : 'rgba(255, 71, 87, 0.18)');
 
     return [
@@ -646,18 +574,6 @@ function buildMarketChartDatasets(rows) {
             marketRole: 'priceLine',
             tooltipKey: 'close',
             order: 2
-        },
-        {
-            type: 'bar',
-            label: 'Close',
-            data: closeValues,
-            backgroundColor: barColors,
-            borderColor: barColors,
-            borderWidth: 1,
-            marketRole: 'priceBars',
-            tooltipKey: 'close',
-            hidden: true,
-            order: 3
         },
         {
             type: 'bar',
@@ -701,11 +617,7 @@ function applyMarketChartVisibility(state) {
     }
 
     state.chart.data.datasets.forEach(dataset => {
-        if (dataset.marketRole === 'priceLine') {
-            dataset.hidden = state.view !== 'line';
-        } else if (dataset.marketRole === 'priceBars') {
-            dataset.hidden = state.view !== 'bar';
-        } else if (dataset.marketRole === 'priceHover' || dataset.marketRole === 'volume') {
+        if (dataset.marketRole === 'priceLine' || dataset.marketRole === 'priceHover' || dataset.marketRole === 'volume') {
             dataset.hidden = false;
         } else if (dataset.indicatorKey) {
             dataset.hidden = !state.indicators[dataset.indicatorKey];
@@ -1051,7 +963,6 @@ function renderMarketChartExportCanvas(state) {
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     const symbol = state.payload.symbol || 'Market';
-    const viewLabel = marketChartViewLabel(state.view);
     const exportedAt = new Date();
     const lastUpdated = state.payload.lastUpdatedLabel || '';
 
@@ -1060,7 +971,7 @@ function renderMarketChartExportCanvas(state) {
 
     ctx.fillStyle = '#e8eef5';
     ctx.font = '700 24px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillText(`${symbol} ${viewLabel} Chart`, 28, 38);
+    ctx.fillText(`${symbol} Price Chart`, 28, 38);
 
     ctx.fillStyle = '#a8b4c6';
     ctx.font = '13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
@@ -1115,12 +1026,12 @@ function drawMarketChartExportLegend(ctx, state, x, y, maxWidth) {
 function buildMarketChartExportLegend(state) {
     const seen = new Set();
     const items = [{
-        label: state.view === 'candlestick' ? 'Candles' : 'Price',
-        color: state.view === 'candlestick' ? '#2ed573' : '#00d4ff'
+        label: 'Price',
+        color: '#00d4ff'
     }];
 
     return items.concat(state.chart.data.datasets
-        .filter(dataset => !dataset.hidden && !dataset.tooltipHidden && dataset.marketRole !== 'priceLine' && dataset.marketRole !== 'priceBars')
+        .filter(dataset => !dataset.hidden && !dataset.tooltipHidden && dataset.marketRole !== 'priceLine')
         .map(dataset => ({
             label: marketChartExportDatasetLabel(dataset),
             color: marketChartExportDatasetColor(dataset)
@@ -1136,7 +1047,7 @@ function buildMarketChartExportLegend(state) {
 }
 
 function marketChartExportDatasetLabel(dataset) {
-    if (dataset.marketRole === 'priceLine' || dataset.marketRole === 'priceBars') {
+    if (dataset.marketRole === 'priceLine') {
         return 'Price';
     }
     if (dataset.marketRole === 'volume') {
@@ -1148,17 +1059,6 @@ function marketChartExportDatasetLabel(dataset) {
 function marketChartExportDatasetColor(dataset) {
     const color = dataset.borderColor || dataset.backgroundColor || '#e8eef5';
     return Array.isArray(color) ? color[0] : color;
-}
-
-function marketChartViewLabel(view) {
-    switch (view) {
-        case 'candlestick':
-            return 'Candlestick';
-        case 'bar':
-            return 'Bar';
-        default:
-            return 'Line';
-    }
 }
 
 function buildMarketChartExportFilename(state) {
