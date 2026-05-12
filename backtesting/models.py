@@ -13,10 +13,10 @@ class BacktestResult(models.Model):
     end_date = models.DateField()
     initial_balance = models.DecimalField(max_digits=14, decimal_places=2)
     final_balance = models.DecimalField(max_digits=14, decimal_places=2)
-    total_return = models.DecimalField(max_digits=8, decimal_places=2)
-    max_drawdown = models.DecimalField(max_digits=8, decimal_places=2)
+    total_return = models.DecimalField(max_digits=12, decimal_places=2)
+    max_drawdown = models.DecimalField(max_digits=12, decimal_places=2)
     number_of_trades = models.PositiveIntegerField(default=0)
-    win_loss_ratio = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    win_loss_ratio = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     equity_curve = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

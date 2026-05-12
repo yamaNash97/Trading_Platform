@@ -15,6 +15,10 @@ def percent(value):
     return Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
+def quantity(value):
+    return Decimal(value).quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
+
+
 @transaction.atomic
 def run_backtest(user, strategy, start_date, end_date):
     prices = list(
@@ -55,14 +59,15 @@ def run_backtest(user, strategy, start_date, end_date):
         elif position_qty == 0 and item['signal'] == 'buy':
             allocation = cash * strategy.position_size_percent / Decimal('100')
             if allocation > 0:
-                position_qty = allocation / close
-                cash -= allocation
-                entry_price = close
-                open_trade = BacktestTrade(
-                    entered_at=point.timestamp,
-                    entry_price=close,
-                    quantity=position_qty,
-                )
+                position_qty = quantity(allocation / close)
+                if position_qty > 0:
+                    cash -= position_qty * close
+                    entry_price = close
+                    open_trade = BacktestTrade(
+                        entered_at=point.timestamp,
+                        entry_price=close,
+                        quantity=position_qty,
+                    )
 
         equity = cash + position_qty * close
         peak_equity = max(peak_equity, equity)

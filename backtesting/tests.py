@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -10,6 +11,7 @@ from market_data.models import Stock
 from market_data.services import seed_sample_prices
 from strategies.models import Strategy
 
+from .models import BacktestResult
 from .services import run_backtest
 
 
@@ -34,6 +36,41 @@ class BacktestEngineTests(TestCase):
         self.assertEqual(result.user, user)
         self.assertGreater(len(result.equity_curve), 0)
         self.assertGreaterEqual(result.number_of_trades, 0)
+        for trade in result.trades.all():
+            self.assertGreaterEqual(trade.quantity.as_tuple().exponent, -6)
+
+    def test_backtest_detail_renders_large_total_return(self):
+        user = User.objects.create_user(username='large-return-user', password='test-pass-123')
+        stock = Stock.objects.create(symbol='AAPL', name='Apple Inc.')
+        strategy = Strategy.objects.create(
+            user=user,
+            stock=stock,
+            name='Large return strategy',
+            strategy_type=Strategy.StrategyType.MOVING_AVERAGE,
+            parameters={'short_window': 5, 'long_window': 20},
+            initial_balance=10000,
+            position_size_percent=50,
+        )
+        today = timezone.now().date()
+        result = BacktestResult.objects.create(
+            user=user,
+            strategy=strategy,
+            stock=stock,
+            start_date=today - timedelta(days=30),
+            end_date=today,
+            initial_balance=Decimal('10000.00'),
+            final_balance=Decimal('126108127.01'),
+            total_return=Decimal('1260981.27'),
+            max_drawdown=Decimal('3.90'),
+            number_of_trades=8,
+            win_loss_ratio=Decimal('3.00'),
+        )
+        self.client.login(username='large-return-user', password='test-pass-123')
+
+        response = self.client.get(reverse('backtesting:backtest_detail', kwargs={'pk': result.pk}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '1260981.27%')
 
     def test_strategy_chart_fragment_renders_indicators(self):
         user = User.objects.create_user(username='chart-user', password='test-pass-123')
