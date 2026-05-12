@@ -31,11 +31,13 @@ class PaperTradingTests(TestCase):
     def test_price_chart_fragment_renders_indicators(self):
         user = User.objects.create_user(username='paper-chart', password='test-pass-123')
         stock = Stock.objects.create(symbol='TSLA', name='Tesla Inc.')
+        microsoft = Stock.objects.create(symbol='MSFT', name='Microsoft Corporation')
         seed_sample_prices(stock, days=80)
+        seed_sample_prices(microsoft, days=80)
         self.client.login(username='paper-chart', password='test-pass-123')
 
         with patch('market_data.charting.refresh_yfinance_prices', return_value=0):
-            response = self.client.get(reverse('paper_trading:price_chart'), {'stock': stock.pk})
+            response = self.client.get(reverse('paper_trading:price_chart'), {'stock': microsoft.pk})
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Line')
@@ -43,5 +45,8 @@ class PaperTradingTests(TestCase):
         self.assertContains(response, 'EMA(50)')
         self.assertContains(response, 'SMA(20)')
         self.assertContains(response, 'RSI(14)')
+        self.assertContains(response, 'name="stock"')
+        self.assertContains(response, f'value="{stock.pk}"')
+        self.assertContains(response, f'value="{microsoft.pk}" selected')
 
 # Create your tests here.

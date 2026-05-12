@@ -1,11 +1,24 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from .charting import chart_context, chart_request_options
 from .forms import StockForm
 from .models import Stock
 from .services import import_alpha_vantage_daily, import_default_commodities, seed_sample_prices
+
+
+def chart_stock_options():
+    return Stock.objects.only('id', 'symbol', 'name').order_by('symbol')
+
+
+def chart_with_stock_options(stock, request):
+    chart = chart_context(stock, **chart_request_options(request))
+    chart['stock_options'] = chart_stock_options()
+    chart['selected_stock_id'] = stock.pk
+    chart['stock_selector_url'] = reverse('market_data:stock_chart')
+    return chart
 
 
 @login_required
@@ -45,7 +58,28 @@ def stock_detail(request, pk):
 @login_required
 def stock_price_chart(request, pk):
     stock = get_object_or_404(Stock, pk=pk)
-    chart = chart_context(stock, **chart_request_options(request))
+    chart = chart_with_stock_options(stock, request)
+    return render(request, 'market_data/_price_chart.html', {'chart': chart})
+
+
+@login_required
+def stock_chart(request):
+    stock = None
+    stock_id = request.GET.get('stock')
+    if stock_id and stock_id.isdigit():
+        stock = Stock.objects.filter(pk=stock_id).first()
+    if stock is None:
+        stock = Stock.objects.order_by('symbol').first()
+
+    if stock is None:
+        chart = {
+            'stock': None,
+            'has_data': False,
+            'warning': 'Add a stock before loading the market chart.',
+            'stock_options': Stock.objects.none(),
+        }
+    else:
+        chart = chart_with_stock_options(stock, request)
     return render(request, 'market_data/_price_chart.html', {'chart': chart})
 
 

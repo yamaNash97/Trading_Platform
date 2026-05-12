@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from market_data.charting import chart_context, chart_request_options
 from market_data.models import Stock
@@ -48,6 +49,9 @@ def price_chart(request):
         chart = {'stock': None, 'has_data': False, 'warning': 'Add a stock before loading the paper trading chart.'}
     else:
         chart = chart_context(stock, **chart_request_options(request, default_refresh_live=True))
+        chart['stock_options'] = Stock.objects.only('id', 'symbol', 'name').order_by('symbol')
+        chart['selected_stock_id'] = stock.pk
+        chart['stock_selector_url'] = reverse('paper_trading:price_chart')
     return render(request, 'market_data/_price_chart.html', {'chart': chart})
 
 # Create your views here.

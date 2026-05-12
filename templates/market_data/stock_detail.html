@@ -11,7 +11,7 @@
 <div
   id="stock-price-chart"
   class="mb-3"
-  hx-get="{% url 'market_data:stock_price_chart' stock.pk %}"
+  hx-get="{% url 'market_data:stock_chart' %}?stock={{ stock.pk }}"
   hx-trigger="load"
   hx-swap="innerHTML"
 >
