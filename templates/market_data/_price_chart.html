@@ -31,7 +31,7 @@
           hx-get="{{ chart.stock_selector_url }}" hx-trigger="change" hx-target="closest [data-market-chart]"
           hx-swap="outerHTML" hx-include="this">
           {% for option in chart.stock_options %}
-          <option value="{{ option.pk }}" {% if option.pk == chart.selected_stock_id %}selected{% endif %}>
+          <option value="{{ option.pk }}" {% if option.pk==chart.selected_stock_id %}selected{% endif %}>
             {{ option.symbol }} - {{ option.name }}
           </option>
           {% endfor %}
@@ -97,13 +97,8 @@
           class="market-legend-swatch volume"></span>Volume</span>
       <span class="market-legend-item active" data-legend-key="ema"><span
           class="market-legend-swatch ema"></span>EMA(50)</span>
-      <span class="market-legend-item" data-legend-key="sma"><span
-          class="market-legend-swatch sma"></span>SMA(20)</span>
       <span class="market-legend-item" data-legend-key="rsi"><span
           class="market-legend-swatch rsi"></span>RSI(14)</span>
-      <span class="market-legend-item" data-legend-key="macd"><span class="market-legend-swatch macd"></span>MACD</span>
-      <span class="market-legend-item" data-legend-key="bollinger"><span
-          class="market-legend-swatch bollinger"></span>Bollinger</span>
     </div>
 
     <div class="market-chart-shell">
