@@ -1,0 +1,194 @@
+/* ========================================
+   Trading Platform App Styles
+   ======================================== */
+
+:root {
+  --chart-bg: #001f20;
+  --chart-panel: rgba(0, 31, 32, 0.96);
+  --chart-border: rgba(100, 150, 200, 0.24);
+  --chart-text: #e8eef5;
+  --chart-muted: #a8b4c6;
+  --chart-accent: #00d4ff;
+}
+
+/* ========================================
+   Market Chart
+   ======================================== */
+
+.market-chart-card {
+  background: var(--chart-bg);
+}
+
+.market-chart-card .card-body {
+  position: relative;
+  overflow: hidden;
+}
+
+.market-chart-controls,
+.market-chart-refresh,
+.market-chart-ohlc,
+.market-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.market-chart-controls {
+  justify-content: flex-end;
+}
+
+.market-chart-controls .btn,
+.market-chart-refresh .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.market-chart-controls .btn svg,
+.market-chart-refresh .btn svg {
+  flex: 0 0 auto;
+}
+
+.market-chart-refresh .form-select {
+  width: auto;
+  min-width: 4.75rem;
+  background-color: #001f20;
+  border-color: #495057;
+  color: var(--chart-text);
+}
+
+.market-chart-legend {
+  margin-bottom: 0.75rem;
+  color: var(--chart-muted);
+  font-size: 0.875rem;
+}
+
+.market-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  opacity: 0.48;
+  transition: opacity 160ms ease;
+}
+
+.market-legend-item.active {
+  opacity: 1;
+}
+
+.market-legend-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--chart-muted);
+}
+
+.market-legend-swatch.price {
+  background: #00d4ff;
+}
+
+.market-legend-swatch.volume {
+  background: rgba(168, 180, 198, 0.7);
+}
+
+.market-legend-swatch.ema {
+  background: #ffa502;
+}
+
+.market-legend-swatch.sma {
+  background: #8fdbff;
+}
+
+.market-legend-swatch.rsi {
+  background: #d8b4fe;
+}
+
+.market-legend-swatch.macd {
+  background: #2ed573;
+}
+
+.market-legend-swatch.bollinger {
+  background: #4dabf7;
+}
+
+.market-chart-shell {
+  position: relative;
+  min-height: 420px;
+  height: min(58vh, 560px);
+}
+
+.market-chart-canvas {
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.market-chart-empty svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--chart-accent);
+}
+
+/* ========================================
+   Market Chart Loading Overlay
+   ======================================== */
+
+.market-chart-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 18, 19, 0.68);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.market-chart-card.is-chart-loading .market-chart-loading-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.market-chart-loading-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--chart-border);
+  border-radius: 0.5rem;
+  background: var(--chart-panel);
+  color: var(--chart-text);
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.24);
+}
+
+.market-chart-loading-icon {
+  color: var(--chart-accent);
+  animation: market-chart-spin 900ms linear infinite;
+}
+
+.market-chart-card [data-chart-refresh].is-loading svg {
+  animation: market-chart-spin 900ms linear infinite;
+}
+
+@keyframes market-chart-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .market-chart-controls {
+    justify-content: flex-start;
+  }
+
+  .market-chart-shell {
+    min-height: 320px;
+    height: 56vh;
+  }
+
+  .market-chart-refresh {
+    width: 100%;
+  }
+}

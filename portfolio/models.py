@@ -28,5 +28,3 @@ class PortfolioHolding(models.Model):
 
     def __str__(self):
         return f'{self.user} {self.stock.symbol} {self.quantity}'
-
-# Create your models here.

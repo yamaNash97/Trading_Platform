@@ -13,10 +13,25 @@ document.addEventListener('DOMContentLoaded', function() {
 document.body.addEventListener('htmx:afterSwap', function(event) {
     initializeMarketCharts(event.target);
     setupTooltips();
+    findMarketChartCards(event.target).forEach(card => setRefreshLoading(card, false));
 });
 
 document.body.addEventListener('htmx:beforeSwap', function(event) {
     disposeMarketCharts(event.detail.target);
+});
+
+document.body.addEventListener('htmx:beforeRequest', function(event) {
+    const card = closestMarketChartCard(event.detail && event.detail.elt);
+    if (card) {
+        setRefreshLoading(card, true);
+    }
+});
+
+document.body.addEventListener('htmx:afterRequest', function(event) {
+    const card = closestMarketChartCard(event.detail && event.detail.elt);
+    if (card && !(event.detail && event.detail.successful)) {
+        setRefreshLoading(card, false);
+    }
 });
 
 // ========================================
@@ -41,10 +56,6 @@ function setTheme(theme) {
 function setupAnimations() {
     // Animate cards on scroll
     observeElements('.card', 'animate-slide');
-    observeElements('.trading-card', 'animate-slide');
-    
-    // Animate gain/loss percentages
-    animatePercentages();
     
     // Glow effect on hover
     addGlowEffect();
@@ -63,30 +74,8 @@ function observeElements(selector, animationClass) {
     document.querySelectorAll(selector).forEach(el => observer.observe(el));
 }
 
-function animatePercentages() {
-    const percentages = document.querySelectorAll('.percentage-change');
-    percentages.forEach(el => {
-        const value = parseFloat(el.textContent);
-        el.classList.add(value >= 0 ? 'positive' : 'negative');
-        
-        // Animate the number count-up
-        const finalValue = el.textContent;
-        let currentValue = 0;
-        const increment = value / 20;
-        const interval = setInterval(() => {
-            currentValue += increment;
-            if ((increment > 0 && currentValue >= value) || (increment < 0 && currentValue <= value)) {
-                el.textContent = finalValue;
-                clearInterval(interval);
-            } else {
-                el.textContent = currentValue.toFixed(2) + '%';
-            }
-        }, 30);
-    });
-}
-
 function addGlowEffect() {
-    const cards = document.querySelectorAll('.card, .trading-card, .btn-primary');
+    const cards = document.querySelectorAll('.card, .btn-primary');
     cards.forEach(card => {
         card.addEventListener('mouseenter', function() {
             this.style.boxShadow = 'var(--shadow-glow), 0 8px 32px rgba(0, 212, 255, 0.2)';
@@ -105,7 +94,6 @@ function addGlowEffect() {
 function setupInteractivity() {
     setupTableRowHover();
     setupFormValidation();
-    setupModals();
     setupTooltips();
 }
 
@@ -139,20 +127,15 @@ function setupFormValidation() {
     });
 }
 
-function setupModals() {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        modal.addEventListener('show.bs.modal', function() {
-            this.style.animation = 'fadeIn 0.3s ease-out';
-        });
-    });
-}
-
 function setupTooltips() {
+    if (!window.bootstrap || !window.bootstrap.Tooltip) {
+        return;
+    }
+
     // Initialize Bootstrap tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+        return new window.bootstrap.Tooltip(tooltipTriggerEl);
     });
 }
 
@@ -230,6 +213,13 @@ function findMarketChartCards(root) {
     return cards;
 }
 
+function closestMarketChartCard(element) {
+    if (!element || !element.closest) {
+        return null;
+    }
+    return element.closest('[data-market-chart]');
+}
+
 function setupMarketChartCard(card) {
     if (card.dataset.chartInitialized === 'true') {
         return;
@@ -247,10 +237,7 @@ function setupMarketChartCard(card) {
         view: 'line',
         indicators: {
             ema: true,
-            sma: false,
-            rsi: false,
-            macd: false,
-            bollinger: false
+            rsi: false
         },
         visibleStart: 0,
         visibleEnd: payload ? Math.max(payload.rows.length - 1, 0) : 0,
@@ -259,7 +246,13 @@ function setupMarketChartCard(card) {
         refreshTimer: null,
         countdownTimer: null,
         nextRefreshAt: null,
-        dragState: null
+        dragState: null,
+        crosshair: {
+            visible: false,
+            x: 0,
+            y: 0
+        },
+        crosshairFrame: null
     };
 
     card._marketChartState = state;
@@ -286,6 +279,9 @@ function disposeMarketChart(card) {
     }
     clearTimeout(state.refreshTimer);
     clearInterval(state.countdownTimer);
+    if (state.crosshairFrame) {
+        cancelAnimationFrame(state.crosshairFrame);
+    }
     if (state.chart) {
         state.chart.destroy();
     }
@@ -314,23 +310,35 @@ function registerMarketChartPlugins() {
     Chart.register({
         id: 'marketCrosshair',
         afterDraw(chart) {
-            const active = chart.tooltip && chart.tooltip._active;
-            if (!active || !active.length) {
+            const marketState = chart.$marketChart;
+            if (!marketState || !marketState.crosshair || !marketState.crosshair.visible) {
                 return;
             }
 
             const {ctx, chartArea} = chart;
-            const point = active[0].element;
+            const x = marketState.crosshair.x;
+            const y = marketState.crosshair.y;
+            if (x < chartArea.left || x > chartArea.right || y < chartArea.top || y > chartArea.bottom) {
+                return;
+            }
+
             ctx.save();
-            ctx.strokeStyle = 'rgba(232, 238, 245, 0.34)';
+            ctx.strokeStyle = 'rgba(100, 150, 200, 0.3)';
             ctx.lineWidth = 1;
-            ctx.setLineDash([4, 4]);
             ctx.beginPath();
-            ctx.moveTo(point.x, chartArea.top);
-            ctx.lineTo(point.x, chartArea.bottom);
-            ctx.moveTo(chartArea.left, point.y);
-            ctx.lineTo(chartArea.right, point.y);
+            ctx.moveTo(x, chartArea.top);
+            ctx.lineTo(x, chartArea.bottom);
+            ctx.moveTo(chartArea.left, y);
+            ctx.lineTo(chartArea.right, y);
             ctx.stroke();
+
+            const yScale = chart.scales.y;
+            if (yScale) {
+                const currency = (marketState.payload && marketState.payload.currency) || 'USD';
+                const label = formatCurrency(yScale.getValueForPixel(y), currency);
+                drawCrosshairValueLabel(ctx, chartArea, y, label);
+            }
+
             ctx.restore();
         }
     });
@@ -386,23 +394,62 @@ function registerMarketChartPlugins() {
     marketChartPluginsRegistered = true;
 }
 
+function drawCrosshairValueLabel(ctx, chartArea, y, label) {
+    const paddingX = 7;
+    const paddingY = 4;
+    const radius = 5;
+    ctx.font = '12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textBaseline = 'middle';
+
+    const textWidth = ctx.measureText(label).width;
+    const width = textWidth + paddingX * 2;
+    const height = 22;
+    const x = chartArea.right - width - 6;
+    const labelY = Math.max(chartArea.top + height / 2, Math.min(chartArea.bottom - height / 2, y));
+    const top = labelY - height / 2;
+
+    ctx.fillStyle = 'rgba(0, 31, 32, 0.92)';
+    ctx.strokeStyle = 'rgba(100, 150, 200, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + radius, top);
+    ctx.lineTo(x + width - radius, top);
+    ctx.quadraticCurveTo(x + width, top, x + width, top + radius);
+    ctx.lineTo(x + width, top + height - radius);
+    ctx.quadraticCurveTo(x + width, top + height, x + width - radius, top + height);
+    ctx.lineTo(x + radius, top + height);
+    ctx.quadraticCurveTo(x, top + height, x, top + height - radius);
+    ctx.lineTo(x, top + radius);
+    ctx.quadraticCurveTo(x, top, x + radius, top);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#e8eef5';
+    ctx.fillText(label, x + paddingX, labelY);
+}
+
 function bindMarketChartControls(state) {
     const card = state.card;
 
     card.querySelectorAll('[data-chart-view]').forEach(button => {
         button.addEventListener('click', () => {
-            state.view = button.dataset.chartView;
-            setGroupedButtonActive(card.querySelectorAll('[data-chart-view]'), button);
-            applyMarketChartVisibility(state);
+            runMarketChartLocalUpdate(state, () => {
+                state.view = button.dataset.chartView;
+                setGroupedButtonActive(card.querySelectorAll('[data-chart-view]'), button);
+                applyMarketChartVisibility(state);
+            });
         });
     });
 
     card.querySelectorAll('[data-chart-toggle]').forEach(button => {
         button.addEventListener('click', () => {
-            const key = button.dataset.chartToggle;
-            state.indicators[key] = !state.indicators[key];
-            setToggleButtonState(button, state.indicators[key]);
-            applyMarketChartVisibility(state);
+            runMarketChartLocalUpdate(state, () => {
+                const key = button.dataset.chartToggle;
+                state.indicators[key] = !state.indicators[key];
+                setToggleButtonState(button, state.indicators[key]);
+                applyMarketChartVisibility(state);
+            });
         });
     });
 
@@ -415,6 +462,10 @@ function bindMarketChartControls(state) {
 
     card.querySelectorAll('[data-chart-refresh]').forEach(button => {
         button.addEventListener('click', () => refreshMarketChart(state, {live: true}));
+    });
+
+    card.querySelectorAll('[data-chart-export]').forEach(button => {
+        button.addEventListener('click', () => exportMarketChart(state));
     });
 
     const autoRefresh = card.querySelector('[data-chart-autorefresh]');
@@ -579,18 +630,6 @@ function renderMarketChart(state) {
                         }
                     }
                 },
-                macd: {
-                    position: 'right',
-                    display: false,
-                    grid: {
-                        drawOnChartArea: false
-                    },
-                    ticks: {
-                        callback(value) {
-                            return Number(value).toFixed(2);
-                        }
-                    }
-                },
                 volume: {
                     display: false,
                     min: 0,
@@ -665,25 +704,7 @@ function buildMarketChartDatasets(rows) {
             order: 8
         },
         lineDataset('EMA(50)', rows.map(row => row.ema), '#ffa502', 'ema', 'ema'),
-        lineDataset('SMA(20)', rows.map(row => row.sma), '#8fdbff', 'sma', 'sma'),
-        lineDataset('RSI(14)', rows.map(row => row.rsi), '#d8b4fe', 'rsi', 'rsi', 'rsi'),
-        lineDataset('MACD', rows.map(row => row.macd), '#2ed573', 'macd', 'macd', 'macd'),
-        lineDataset('MACD Signal', rows.map(row => row.macdSignal), '#ffbf69', 'macd', 'macdSignal', 'macd'),
-        {
-            type: 'bar',
-            label: 'MACD Histogram',
-            data: rows.map(row => row.macdHistogram),
-            yAxisID: 'macd',
-            backgroundColor: rows.map(row => (row.macdHistogram || 0) >= 0 ? 'rgba(46, 213, 115, 0.42)' : 'rgba(255, 71, 87, 0.42)'),
-            borderWidth: 0,
-            indicatorKey: 'macd',
-            tooltipKey: 'macdHistogram',
-            hidden: true,
-            order: 7
-        },
-        lineDataset('Bollinger Upper', rows.map(row => row.bollingerUpper), '#4dabf7', 'bollinger', 'bollingerUpper'),
-        lineDataset('Bollinger Mid', rows.map(row => row.bollingerMiddle), 'rgba(77, 171, 247, 0.5)', 'bollinger', 'bollingerMiddle'),
-        lineDataset('Bollinger Lower', rows.map(row => row.bollingerLower), '#4dabf7', 'bollinger', 'bollingerLower')
+        lineDataset('RSI(14)', rows.map(row => row.rsi), '#d8b4fe', 'rsi', 'rsi', 'rsi')
     ];
 }
 
@@ -724,7 +745,6 @@ function applyMarketChartVisibility(state) {
     });
 
     state.chart.options.scales.rsi.display = Boolean(state.indicators.rsi);
-    state.chart.options.scales.macd.display = Boolean(state.indicators.macd);
     state.chart.$marketChart = state;
     state.chart.update();
     updateMarketChartLegend(state);
@@ -752,6 +772,7 @@ function bindMarketChartCanvasInteractions(state) {
         if (!state.chart.chartArea) {
             return;
         }
+        updateMarketChartCrosshair(state, event);
         canvas.setPointerCapture(event.pointerId);
         state.dragState = {
             pointerId: event.pointerId,
@@ -762,6 +783,7 @@ function bindMarketChartCanvasInteractions(state) {
     });
 
     canvas.addEventListener('pointermove', event => {
+        updateMarketChartCrosshair(state, event);
         if (!state.dragState || state.dragState.pointerId !== event.pointerId) {
             return;
         }
@@ -776,6 +798,9 @@ function bindMarketChartCanvasInteractions(state) {
             state.dragState = null;
         }
     });
+
+    canvas.addEventListener('pointerleave', () => hideMarketChartCrosshair(state));
+    canvas.addEventListener('pointercancel', () => hideMarketChartCrosshair(state));
 
     canvas.addEventListener('keydown', event => {
         if (event.key === '+' || event.key === '=') {
@@ -793,6 +818,43 @@ function bindMarketChartCanvasInteractions(state) {
         } else if (event.key === 'Home') {
             event.preventDefault();
             resetMarketChartZoom(state);
+        }
+    });
+}
+
+function updateMarketChartCrosshair(state, event) {
+    if (!state.chart || !state.chart.chartArea) {
+        return;
+    }
+
+    const rect = state.chart.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const area = state.chart.chartArea;
+    const visible = x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
+
+    state.crosshair.visible = visible;
+    state.crosshair.x = x;
+    state.crosshair.y = y;
+    requestMarketChartDraw(state);
+}
+
+function hideMarketChartCrosshair(state) {
+    if (!state.crosshair || !state.crosshair.visible) {
+        return;
+    }
+    state.crosshair.visible = false;
+    requestMarketChartDraw(state);
+}
+
+function requestMarketChartDraw(state) {
+    if (!state.chart || state.crosshairFrame) {
+        return;
+    }
+    state.crosshairFrame = requestAnimationFrame(() => {
+        state.crosshairFrame = null;
+        if (state.chart) {
+            state.chart.draw();
         }
     });
 }
@@ -926,11 +988,224 @@ function updateCountdownLabel(state, nextRefreshAt) {
     label.textContent = `Auto refresh in ${seconds}s`;
 }
 
+function runMarketChartLocalUpdate(state, updater) {
+    if (!state || !state.card) {
+        return;
+    }
+
+    setRefreshLoading(state.card, true);
+    requestAnimationFrame(() => {
+        try {
+            updater();
+        } finally {
+            window.setTimeout(() => setRefreshLoading(state.card, false), 180);
+        }
+    });
+}
+
 function setRefreshLoading(card, isLoading) {
+    if (!card) {
+        return;
+    }
+    card.classList.toggle('is-chart-loading', isLoading);
+    const overlay = card.querySelector('[data-chart-loading]');
+    if (overlay) {
+        overlay.setAttribute('aria-hidden', isLoading ? 'false' : 'true');
+    }
     card.querySelectorAll('[data-chart-refresh]').forEach(button => {
         button.disabled = isLoading;
         button.classList.toggle('is-loading', isLoading);
     });
+    card.querySelectorAll('[data-chart-export]').forEach(button => {
+        button.disabled = isLoading;
+    });
+}
+
+function exportMarketChart(state) {
+    if (!state || !state.chart || !state.payload) {
+        return;
+    }
+
+    const exportButton = state.card.querySelector('[data-chart-export]');
+    if (exportButton) {
+        exportButton.disabled = true;
+    }
+
+    const wasCrosshairVisible = state.crosshair && state.crosshair.visible;
+    if (state.crosshair) {
+        state.crosshair.visible = false;
+        state.chart.draw();
+    }
+
+    try {
+        const canvas = renderMarketChartExportCanvas(state);
+        const filename = buildMarketChartExportFilename(state);
+        if (canvas.toBlob) {
+            canvas.toBlob(blob => {
+                if (blob) {
+                    downloadBlob(blob, filename);
+                }
+                if (exportButton) {
+                    exportButton.disabled = false;
+                }
+            }, 'image/png');
+        } else {
+            downloadDataUrl(canvas.toDataURL('image/png'), filename);
+            if (exportButton) {
+                exportButton.disabled = false;
+            }
+        }
+    } catch (error) {
+        console.error('Could not export market chart.', error);
+        showMarketChartError(state.card, 'Could not export chart image.');
+        if (exportButton) {
+            exportButton.disabled = false;
+        }
+    } finally {
+        if (state.crosshair) {
+            state.crosshair.visible = wasCrosshairVisible;
+            state.chart.draw();
+        }
+    }
+}
+
+function renderMarketChartExportCanvas(state) {
+    const width = 1200;
+    const height = 600;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    const symbol = state.payload.symbol || 'Market';
+    const viewLabel = marketChartViewLabel(state.view);
+    const exportedAt = new Date();
+    const lastUpdated = state.payload.lastUpdatedLabel || '';
+
+    ctx.fillStyle = '#001f20';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#e8eef5';
+    ctx.font = '700 24px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(`${symbol} ${viewLabel} Chart`, 28, 38);
+
+    ctx.fillStyle = '#a8b4c6';
+    ctx.font = '13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`Exported ${exportedAt.toLocaleString()}`, width - 28, 28);
+    if (lastUpdated) {
+        ctx.fillText(`Last update ${lastUpdated}`, width - 28, 48);
+    }
+    ctx.textAlign = 'left';
+
+    const legendBottom = drawMarketChartExportLegend(ctx, state, 28, 66, width - 56);
+    const chartTop = Math.max(96, legendBottom + 16);
+    const chartHeight = height - chartTop - 28;
+    ctx.drawImage(state.chart.canvas, 28, chartTop, width - 56, chartHeight);
+
+    ctx.strokeStyle = 'rgba(100, 150, 200, 0.24)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(28, chartTop, width - 56, chartHeight);
+
+    return canvas;
+}
+
+function drawMarketChartExportLegend(ctx, state, x, y, maxWidth) {
+    const items = buildMarketChartExportLegend(state);
+    let cursorX = x;
+    let cursorY = y;
+    const rowHeight = 22;
+
+    ctx.font = '13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textBaseline = 'middle';
+
+    items.forEach(item => {
+        const textWidth = ctx.measureText(item.label).width;
+        const itemWidth = textWidth + 32;
+        if (cursorX > x && cursorX + itemWidth > x + maxWidth) {
+            cursorX = x;
+            cursorY += rowHeight;
+        }
+
+        ctx.fillStyle = item.color;
+        ctx.beginPath();
+        ctx.arc(cursorX + 6, cursorY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#d7e1ec';
+        ctx.fillText(item.label, cursorX + 16, cursorY);
+        cursorX += itemWidth;
+    });
+
+    return cursorY;
+}
+
+function buildMarketChartExportLegend(state) {
+    const seen = new Set();
+    const items = [{
+        label: state.view === 'candlestick' ? 'Candles' : 'Price',
+        color: state.view === 'candlestick' ? '#2ed573' : '#00d4ff'
+    }];
+
+    return items.concat(state.chart.data.datasets
+        .filter(dataset => !dataset.hidden && !dataset.tooltipHidden && dataset.marketRole !== 'priceLine' && dataset.marketRole !== 'priceBars')
+        .map(dataset => ({
+            label: marketChartExportDatasetLabel(dataset),
+            color: marketChartExportDatasetColor(dataset)
+        })))
+        .filter(item => {
+            const key = `${item.label}:${item.color}`;
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        });
+}
+
+function marketChartExportDatasetLabel(dataset) {
+    if (dataset.marketRole === 'priceLine' || dataset.marketRole === 'priceBars') {
+        return 'Price';
+    }
+    if (dataset.marketRole === 'volume') {
+        return 'Volume';
+    }
+    return dataset.label || 'Series';
+}
+
+function marketChartExportDatasetColor(dataset) {
+    const color = dataset.borderColor || dataset.backgroundColor || '#e8eef5';
+    return Array.isArray(color) ? color[0] : color;
+}
+
+function marketChartViewLabel(view) {
+    switch (view) {
+        case 'candlestick':
+            return 'Candlestick';
+        case 'bar':
+            return 'Bar';
+        default:
+            return 'Line';
+    }
+}
+
+function buildMarketChartExportFilename(state) {
+    const symbol = String((state.payload && state.payload.symbol) || 'market').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+    const date = new Date().toISOString().slice(0, 10);
+    return `chart-${symbol}-${date}.png`;
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    downloadDataUrl(url, filename);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadDataUrl(url, filename) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 }
 
 function showMarketChartError(card, message) {
@@ -1000,22 +1275,8 @@ function marketTooltipLabel(context, currency) {
             return `Close: ${formatCurrency(value, currency)}`;
         case 'ema':
             return `EMA(50): ${formatCurrency(value, currency)}`;
-        case 'sma':
-            return `SMA(20): ${formatCurrency(value, currency)}`;
         case 'rsi':
             return `RSI(14): ${Number(value).toFixed(2)}`;
-        case 'macd':
-            return `MACD: ${formatSignedNumber(value)}`;
-        case 'macdSignal':
-            return `MACD signal: ${formatSignedNumber(value)}`;
-        case 'macdHistogram':
-            return `MACD hist: ${formatSignedNumber(value)}`;
-        case 'bollingerUpper':
-            return `BB upper: ${formatCurrency(value, currency)}`;
-        case 'bollingerMiddle':
-            return `BB mid: ${formatCurrency(value, currency)}`;
-        case 'bollingerLower':
-            return `BB lower: ${formatCurrency(value, currency)}`;
         case 'volume':
             return `Volume: ${formatVolume(value)}`;
         default:
@@ -1096,127 +1357,3 @@ function formatCurrency(value, currency) {
         maximumFractionDigits: 2
     }).format(value);
 }
-
-function formatPercentage(value) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'percent',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(value);
-}
-
-function getTradeColor(value) {
-    return value >= 0 ? '#2ed573' : '#ff4757';
-}
-
-// ========================================
-// REAL-TIME DATA UPDATES (if websockets enabled)
-// ========================================
-
-function setupRealtimeUpdates() {
-    // This is a placeholder for WebSocket integration
-    // Implement based on your Django Channels setup
-    
-    const elements = document.querySelectorAll('[data-live-update]');
-    if (elements.length > 0) {
-        console.log('Live update elements detected. Connect WebSocket here.');
-    }
-}
-
-// ========================================
-// PRICE TICKER ANIMATION
-// ========================================
-
-function animatePriceTickers() {
-    const tickers = document.querySelectorAll('[data-price]');
-    tickers.forEach(ticker => {
-        const oldPrice = parseFloat(ticker.textContent);
-        const newPrice = parseFloat(ticker.getAttribute('data-price'));
-        
-        if (oldPrice !== newPrice) {
-            // Flash animation
-            ticker.style.backgroundColor = newPrice > oldPrice ? 
-                'rgba(46, 213, 115, 0.2)' : 
-                'rgba(255, 71, 87, 0.2)';
-            
-            setTimeout(() => {
-                ticker.style.backgroundColor = '';
-                ticker.textContent = formatCurrency(newPrice);
-            }, 500);
-        }
-    });
-}
-
-// ========================================
-// PERFORMANCE METRICS TRACKING
-// ========================================
-
-function trackPortfolioPerformance() {
-    const performanceCards = document.querySelectorAll('[data-metric]');
-    performanceCards.forEach(card => {
-        const metric = card.getAttribute('data-metric');
-        const value = parseFloat(card.getAttribute('data-value'));
-        
-        // Add visual indicator
-        if (value > 0) {
-            card.classList.add('gain');
-        } else if (value < 0) {
-            card.classList.add('loss');
-        }
-    });
-}
-
-// ========================================
-// EXPORT AND DOWNLOAD FUNCTIONS
-// ========================================
-
-function exportToCSV(tableElement, filename) {
-    let csv = [];
-    const rows = tableElement.querySelectorAll('tr');
-    
-    rows.forEach(row => {
-        let csvRow = [];
-        const cols = row.querySelectorAll('td, th');
-        cols.forEach(col => {
-            csvRow.push('"' + col.textContent + '"');
-        });
-        csv.push(csvRow.join(','));
-    });
-    
-    downloadCSV(csv.join('\n'), filename);
-}
-
-function downloadCSV(csv, filename) {
-    const csvFile = new Blob([csv], { type: 'text/csv' });
-    const downloadLink = document.createElement('a');
-    downloadLink.href = URL.createObjectURL(csvFile);
-    downloadLink.download = filename;
-    downloadLink.click();
-}
-
-// ========================================
-// KEYBOARD SHORTCUTS
-// ========================================
-
-document.addEventListener('keydown', function(event) {
-    // Ctrl+D or Cmd+D for Dashboard
-    if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
-        event.preventDefault();
-        window.location.href = '/dashboard/';
-    }
-    
-    // Ctrl+P or Cmd+P for Portfolio
-    if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
-        event.preventDefault();
-        window.location.href = '/portfolio/';
-    }
-});
-
-// ========================================
-// INITIALIZATION
-// ========================================
-
-// Run additional setups
-setupRealtimeUpdates();
-animatePriceTickers();
-trackPortfolioPerformance();

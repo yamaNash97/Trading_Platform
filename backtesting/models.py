@@ -39,5 +39,3 @@ class BacktestTrade(models.Model):
 
     class Meta:
         ordering = ['entered_at']
-
-# Create your models here.

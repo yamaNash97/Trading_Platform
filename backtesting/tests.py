@@ -64,5 +64,15 @@ class BacktestEngineTests(TestCase):
         self.assertContains(response, 'name="stock"')
         self.assertContains(response, f'value="{stock.pk}"')
         self.assertContains(response, f'value="{microsoft.pk}" selected')
+        self.assertContains(response, '45s')
+        self.assertNotContains(response, '{{ interval }}')
 
-# Create your tests here.
+    def test_strategy_chart_fragment_handles_blank_strategy(self):
+        user = User.objects.create_user(username='blank-strategy-user', password='test-pass-123')
+        self.client.login(username='blank-strategy-user', password='test-pass-123')
+
+        response = self.client.get(reverse('backtesting:strategy_price_chart'), {'strategy': ''})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No chart data yet')
+        self.assertContains(response, 'Add a stock or create an active strategy to load a chart.')

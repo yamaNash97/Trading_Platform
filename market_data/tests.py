@@ -53,5 +53,3 @@ class MarketDataTests(TestCase):
         self.assertContains(response, f'value="{apple.pk}"')
         self.assertContains(response, f'value="{microsoft.pk}" selected')
         self.assertContains(response, reverse('market_data:stock_chart'))
-
-# Create your tests here.

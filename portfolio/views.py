@@ -50,5 +50,3 @@ def dashboard(request):
             'total_value': total_value,
         },
     )
-
-# Create your views here.

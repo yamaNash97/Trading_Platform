@@ -101,5 +101,3 @@ def refresh_alpha_vantage(request, pk):
     else:
         messages.success(request, f'{imported} new Alpha Vantage rows imported for {stock.symbol}.')
     return redirect('market_data:stock_detail', pk=stock.pk)
-
-# Create your views here.

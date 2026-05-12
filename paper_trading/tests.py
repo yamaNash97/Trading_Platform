@@ -48,5 +48,3 @@ class PaperTradingTests(TestCase):
         self.assertContains(response, 'name="stock"')
         self.assertContains(response, f'value="{stock.pk}"')
         self.assertContains(response, f'value="{microsoft.pk}" selected')
-
-# Create your tests here.

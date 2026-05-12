@@ -9,5 +9,3 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.display_name or self.user.get_username()
-
-# Create your models here.

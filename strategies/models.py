@@ -48,5 +48,3 @@ class Strategy(models.Model):
     @property
     def rsi_sell_threshold(self):
         return int(self.parameters.get('rsi_sell_threshold', 70))
-
-# Create your models here.

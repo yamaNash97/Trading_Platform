@@ -7,5 +7,3 @@ from .models import Profile
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'display_name', 'created_at')
     search_fields = ('user__username', 'user__email', 'display_name')
-
-# Register your models here.

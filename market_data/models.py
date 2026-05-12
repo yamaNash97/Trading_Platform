@@ -38,5 +38,3 @@ class PriceData(models.Model):
 
     def __str__(self):
         return f'{self.stock.symbol} {self.timestamp:%Y-%m-%d} {self.close_price}'
-
-# Create your models here.

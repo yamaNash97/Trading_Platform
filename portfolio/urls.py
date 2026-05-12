@@ -7,5 +7,4 @@ app_name = 'portfolio'
 urlpatterns = [
     path('', views.landing, name='landing'),
     path('dashboard/', views.dashboard, name='dashboard'),
-    # path('signup/', views.signup, name='signup'),
 ]

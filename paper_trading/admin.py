@@ -19,5 +19,3 @@ class OrderAdmin(admin.ModelAdmin):
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ('user', 'stock', 'transaction_type', 'quantity', 'price', 'created_at')
     list_filter = ('transaction_type',)
-
-# Register your models here.

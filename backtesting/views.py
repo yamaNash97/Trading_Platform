@@ -103,5 +103,3 @@ def result_price_chart(request, pk):
     )
     add_chart_stock_selector(chart, stock, reverse('backtesting:result_price_chart', kwargs={'pk': result.pk}))
     return render(request, 'market_data/_price_chart.html', {'chart': chart})
-
-# Create your views here.

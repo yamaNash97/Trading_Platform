@@ -31,5 +31,3 @@ def strategy_create(request):
 def strategy_detail(request, pk):
     strategy = get_object_or_404(Strategy.objects.select_related('stock'), pk=pk, user=request.user)
     return render(request, 'strategies/strategy_detail.html', {'strategy': strategy})
-
-# Create your views here.

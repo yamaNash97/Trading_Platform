@@ -13,5 +13,3 @@ class BacktestResultAdmin(admin.ModelAdmin):
     list_display = ('strategy', 'stock', 'user', 'total_return', 'max_drawdown', 'number_of_trades', 'created_at')
     list_filter = ('stock', 'created_at')
     inlines = [BacktestTradeInline]
-
-# Register your models here.

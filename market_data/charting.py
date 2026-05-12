@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from django.utils import timezone
 
-from .models import PriceData, Stock
+from .models import PriceData
 from .services import to_decimal
 
 
@@ -96,8 +96,6 @@ def chart_request_options(request, default_refresh_live=False, default_timeframe
         'refresh_live': refresh_live,
         'timeframe': normalise_timeframe(request.GET.get('timeframe'), default=default_timeframe),
     }
-
-
 def source_label(source):
     if source == 'yfinance':
         return 'Live via yfinance'
@@ -390,10 +388,3 @@ def chart_context(stock, start_date=None, end_date=None, refresh_live=False, lim
             },
         },
     }
-
-
-def chart_context_for_first_stock(refresh_live=False):
-    stock = Stock.objects.order_by('symbol').first()
-    if not stock:
-        return {'stock': None, 'has_data': False, 'warning': 'Add a stock to load a chart.'}
-    return chart_context(stock, refresh_live=refresh_live)

@@ -53,5 +53,3 @@ def price_chart(request):
         chart['selected_stock_id'] = stock.pk
         chart['stock_selector_url'] = reverse('paper_trading:price_chart')
     return render(request, 'market_data/_price_chart.html', {'chart': chart})
-
-# Create your views here.

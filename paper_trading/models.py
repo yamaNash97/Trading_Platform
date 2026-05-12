@@ -53,5 +53,3 @@ class Transaction(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-
-# Create your models here.

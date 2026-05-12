@@ -4,12 +4,14 @@ from django.urls import reverse
 
 
 class DashboardViewTests(TestCase):
-    def test_landing_page_renders_join_button_to_login(self):
+    def test_landing_page_renders_auth_links(self):
         response = self.client.get(reverse('portfolio:landing'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Join Us!')
+        self.assertContains(response, 'Get')
+        self.assertContains(response, 'Started')
         self.assertContains(response, reverse('login'))
+        self.assertContains(response, reverse('accounts:signup'))
 
     def test_login_and_logout_route_flow(self):
         User.objects.create_user(username='viewer', password='test-pass-123')
@@ -36,5 +38,3 @@ class DashboardViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Portfolio Dashboard')
-
-# Create your tests here.
