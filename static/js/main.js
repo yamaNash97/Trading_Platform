@@ -188,6 +188,7 @@ function setupChartDefaults() {
 // ========================================
 
 const marketChartRegistry = new Map();
+const MARKET_CHART_REFRESH_SECONDS = 300;
 let marketChartPluginsRegistered = false;
 
 function initializeMarketCharts(root) {
@@ -227,9 +228,6 @@ function setupMarketChartCard(card) {
 
     card.dataset.chartInitialized = 'true';
     const payload = readMarketChartPayload(card);
-    const intervalSelect = card.querySelector('[data-chart-interval]');
-    const persistedAuto = card.dataset.persistAutoRefresh;
-    const persistedInterval = card.dataset.persistInterval;
     const state = {
         card: card,
         payload: payload,
@@ -241,8 +239,6 @@ function setupMarketChartCard(card) {
         },
         visibleStart: 0,
         visibleEnd: payload ? Math.max(payload.rows.length - 1, 0) : 0,
-        refreshInterval: Number(persistedInterval || (intervalSelect && intervalSelect.value) || card.dataset.refreshInterval || 45),
-        autoRefresh: persistedAuto === undefined ? true : persistedAuto === '1',
         refreshTimer: null,
         countdownTimer: null,
         nextRefreshAt: null,
@@ -257,7 +253,6 @@ function setupMarketChartCard(card) {
 
     card._marketChartState = state;
     marketChartRegistry.set(card.id, state);
-    applyPersistedRefreshControls(state);
     bindMarketChartControls(state);
 
     if (payload && payload.rows.length) {
@@ -468,22 +463,6 @@ function bindMarketChartControls(state) {
         button.addEventListener('click', () => exportMarketChart(state));
     });
 
-    const autoRefresh = card.querySelector('[data-chart-autorefresh]');
-    if (autoRefresh) {
-        autoRefresh.addEventListener('change', () => {
-            state.autoRefresh = autoRefresh.checked;
-            scheduleMarketChartRefresh(state);
-        });
-    }
-
-    const intervalSelect = card.querySelector('[data-chart-interval]');
-    if (intervalSelect) {
-        intervalSelect.addEventListener('change', () => {
-            state.refreshInterval = Number(intervalSelect.value);
-            scheduleMarketChartRefresh(state);
-        });
-    }
-
     card.querySelectorAll('[data-chart-action]').forEach(button => {
         button.addEventListener('click', () => {
             const action = button.dataset.chartAction;
@@ -496,17 +475,6 @@ function bindMarketChartControls(state) {
             }
         });
     });
-}
-
-function applyPersistedRefreshControls(state) {
-    const autoRefresh = state.card.querySelector('[data-chart-autorefresh]');
-    const intervalSelect = state.card.querySelector('[data-chart-interval]');
-    if (autoRefresh) {
-        autoRefresh.checked = state.autoRefresh;
-    }
-    if (intervalSelect) {
-        intervalSelect.value = String(state.refreshInterval);
-    }
 }
 
 function renderMarketChart(state) {
@@ -914,6 +882,8 @@ function refreshMarketChart(state, options) {
         return;
     }
 
+    clearMarketChartRefreshTimers(state);
+
     const url = new URL(urlText, window.location.origin);
     const timeframe = options && options.timeframe;
     if (timeframe) {
@@ -942,8 +912,6 @@ function refreshMarketChart(state, options) {
                 throw new Error('Chart response did not include a chart fragment.');
             }
 
-            nextCard.dataset.persistAutoRefresh = state.autoRefresh ? '1' : '0';
-            nextCard.dataset.persistInterval = String(state.refreshInterval);
             disposeMarketChart(card);
             card.replaceWith(nextCard);
             initializeMarketCharts(nextCard);
@@ -956,35 +924,41 @@ function refreshMarketChart(state, options) {
             console.error(error);
             showMarketChartError(card, error.message);
         })
-        .finally(() => setRefreshLoading(card, false));
+        .finally(() => {
+            setRefreshLoading(card, false);
+            if (card.isConnected && card._marketChartState === state) {
+                scheduleMarketChartRefresh(state);
+            }
+        });
+}
+
+function clearMarketChartRefreshTimers(state) {
+    clearTimeout(state.refreshTimer);
+    clearInterval(state.countdownTimer);
+    state.refreshTimer = null;
+    state.countdownTimer = null;
 }
 
 function scheduleMarketChartRefresh(state) {
-    clearTimeout(state.refreshTimer);
-    clearInterval(state.countdownTimer);
+    clearMarketChartRefreshTimers(state);
 
-    if (!state.autoRefresh) {
-        updateCountdownLabel(state, null);
+    if (!state.card || !state.card.isConnected) {
         return;
     }
 
-    const intervalMs = Math.max(state.refreshInterval || 45, 5) * 1000;
+    const intervalMs = MARKET_CHART_REFRESH_SECONDS * 1000;
     state.nextRefreshAt = Date.now() + intervalMs;
-    state.countdownTimer = setInterval(() => updateCountdownLabel(state, state.nextRefreshAt), 1000);
-    updateCountdownLabel(state, state.nextRefreshAt);
+    state.countdownTimer = setInterval(() => updateCountdownLabel(state), 1000);
+    updateCountdownLabel(state);
     state.refreshTimer = setTimeout(() => refreshMarketChart(state, {live: true}), intervalMs);
 }
 
-function updateCountdownLabel(state, nextRefreshAt) {
+function updateCountdownLabel(state) {
     const label = state.card.querySelector('[data-chart-countdown]');
     if (!label) {
         return;
     }
-    if (!nextRefreshAt) {
-        label.textContent = 'Auto refresh off';
-        return;
-    }
-    const seconds = Math.max(0, Math.ceil((nextRefreshAt - Date.now()) / 1000));
+    const seconds = Math.max(0, Math.ceil((state.nextRefreshAt - Date.now()) / 1000));
     label.textContent = `Auto refresh in ${seconds}s`;
 }
 
