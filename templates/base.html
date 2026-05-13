@@ -43,9 +43,8 @@
 
   <main class="container py-4">
     {% for message in messages %}
-    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+    <div class="alert alert-{{ message.tags|default:'info' }} fade show" role="alert" data-auto-dismiss-alert data-auto-dismiss-ms="10000">
       {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     {% endfor %}
     {% block content %}{% endblock %}

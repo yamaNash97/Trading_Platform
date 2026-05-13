@@ -8,10 +8,12 @@ document.addEventListener('DOMContentLoaded', function() {
     setupInteractivity();
     setupChartDefaults();
     initializeMarketCharts(document);
+    setupAutoDismissAlerts(document);
 });
 
 document.body.addEventListener('htmx:afterSwap', function(event) {
     initializeMarketCharts(event.target);
+    setupAutoDismissAlerts(event.target);
     setupTooltips();
     findMarketChartCards(event.target).forEach(card => setRefreshLoading(card, false));
 });
@@ -95,6 +97,29 @@ function setupInteractivity() {
     setupTableRowHover();
     setupFormValidation();
     setupTooltips();
+}
+
+function setupAutoDismissAlerts(root) {
+    const scope = root || document;
+    const alerts = [];
+    if (scope.nodeType === 1 && scope.matches('[data-auto-dismiss-alert]')) {
+        alerts.push(scope);
+    }
+    if (scope.querySelectorAll) {
+        scope.querySelectorAll('[data-auto-dismiss-alert]').forEach(alert => alerts.push(alert));
+    }
+
+    alerts.forEach(alert => {
+        if (alert.dataset.autoDismissInitialized === 'true') {
+            return;
+        }
+        alert.dataset.autoDismissInitialized = 'true';
+        const delay = Number(alert.dataset.autoDismissMs) || 10000;
+        window.setTimeout(() => {
+            alert.classList.remove('show');
+            window.setTimeout(() => alert.remove(), 160);
+        }, delay);
+    });
 }
 
 function setupTableRowHover() {
