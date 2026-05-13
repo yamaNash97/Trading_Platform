@@ -5,6 +5,7 @@ from django.db import transaction
 from strategies.services import generate_signals
 
 from .models import BacktestResult, BacktestTrade
+from market_data.models import PriceData
 
 
 def money(value):
@@ -19,11 +20,46 @@ def quantity(value):
     return Decimal(value).quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
 
 
+def backtest_price_queryset(stock, start_date, end_date):
+    price_query = stock.price_data.filter(
+        timestamp__date__gte=start_date,
+        timestamp__date__lte=end_date,
+    )
+    if price_query.exclude(source='sample').exists():
+        price_query = price_query.exclude(source='sample')
+    return price_query.order_by('timestamp')
+
+
+def trade_source_issues(result):
+    trades = list(result.trades.all())
+    timestamps = []
+    for trade in trades:
+        timestamps.append(trade.entered_at)
+        if trade.exited_at:
+            timestamps.append(trade.exited_at)
+
+    sources_by_timestamp = {
+        price.timestamp: price.source
+        for price in PriceData.objects.filter(stock=result.stock, timestamp__in=timestamps)
+    }
+    issues = []
+    for trade in trades:
+        entry_source = sources_by_timestamp.get(trade.entered_at)
+        exit_source = sources_by_timestamp.get(trade.exited_at)
+        if entry_source and exit_source and entry_source != exit_source:
+            issues.append(
+                {
+                    'trade': trade,
+                    'entry_source': entry_source,
+                    'exit_source': exit_source,
+                }
+            )
+    return issues
+
+
 @transaction.atomic
 def run_backtest(user, strategy, start_date, end_date):
-    prices = list(
-        strategy.stock.price_data.filter(timestamp__date__gte=start_date, timestamp__date__lte=end_date).order_by('timestamp')
-    )
+    prices = list(backtest_price_queryset(strategy.stock, start_date, end_date))
     if len(prices) < strategy.long_window:
         raise ValueError('Not enough price history for the selected strategy and date range.')
 
@@ -96,8 +132,8 @@ def run_backtest(user, strategy, start_date, end_date):
         user=user,
         strategy=strategy,
         stock=strategy.stock,
-        start_date=start_date,
-        end_date=end_date,
+        start_date=prices[0].timestamp.date(),
+        end_date=prices[-1].timestamp.date(),
         initial_balance=money(initial_balance),
         final_balance=final_balance,
         total_return=total_return,

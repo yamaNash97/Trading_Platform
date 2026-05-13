@@ -44,7 +44,7 @@ class PaperTradingTests(TestCase):
         self.assertNotContains(response, 'Bars')
         self.assertNotContains(response, 'data-chart-view')
         self.assertContains(response, 'EMA(50)')
-        self.assertNotContains(response, 'RSI(14)')
+        self.assertContains(response, 'RSI(14)')
         self.assertContains(response, 'name="stock"')
         self.assertContains(response, f'value="{stock.pk}"')
         self.assertContains(response, f'value="{microsoft.pk}" selected')

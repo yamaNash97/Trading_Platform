@@ -9,7 +9,7 @@ from strategies.models import Strategy
 
 from .forms import BacktestRunForm
 from .models import BacktestResult
-from .services import run_backtest
+from .services import run_backtest, trade_source_issues
 
 
 def add_chart_stock_selector(chart, stock, selector_url):
@@ -49,7 +49,7 @@ def backtest_detail(request, pk):
         pk=pk,
         user=request.user,
     )
-    return render(request, 'backtesting/backtest_detail.html', {'result': result})
+    return render(request, 'backtesting/backtest_detail.html', {'result': result, 'trade_source_issues': trade_source_issues(result)})
 
 
 @login_required
@@ -90,16 +90,14 @@ def result_price_chart(request, pk):
         pk=pk,
         user=request.user,
     )
-    stock = result.stock
-    stock_id = request.GET.get('stock')
-    if stock_id and stock_id.isdigit():
-        stock = Stock.objects.filter(pk=stock_id).first() or result.stock
+    options = chart_request_options(request, default_refresh_live=False, default_timeframe=None)
 
     chart = chart_context(
-        stock,
+        result.stock,
         start_date=result.start_date,
         end_date=result.end_date,
-        **chart_request_options(request, default_refresh_live=True),
+        refresh_live=False,
+        timeframe=options['timeframe'],
     )
-    add_chart_stock_selector(chart, stock, reverse('backtesting:result_price_chart', kwargs={'pk': result.pk}))
+    chart['live_refresh_enabled'] = False
     return render(request, 'market_data/_price_chart.html', {'chart': chart})
