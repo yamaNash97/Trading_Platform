@@ -1,36 +1,55 @@
+"""Backtesting engine and result-audit helpers.
+
+This module runs strategies over historical prices, records simulated trades,
+and calculates account-level metrics such as total return and max drawdown.
+Views call these functions and handle user messages.
+"""
+
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import transaction
 
+from market_data.models import PriceData
 from strategies.services import generate_signals
 
 from .models import BacktestResult, BacktestTrade
-from market_data.models import PriceData
 
 
 def money(value):
+    """Round a Decimal-compatible value to cents."""
     return Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 def percent(value):
+    """Round a Decimal-compatible value to a two-decimal percentage."""
     return Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 def quantity(value):
+    """Round a simulated share quantity to six decimal places."""
     return Decimal(value).quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
 
 
 def backtest_price_queryset(stock, start_date, end_date):
+    """Return the ordered price rows used by the backtest engine."""
     price_query = stock.price_data.filter(
         timestamp__date__gte=start_date,
         timestamp__date__lte=end_date,
     )
+    # Prefer imported/live provider rows over generated sample rows when both
+    # exist so a single backtest does not mix incompatible price sources.
     if price_query.exclude(source='sample').exists():
         price_query = price_query.exclude(source='sample')
     return price_query.order_by('timestamp')
 
 
 def trade_source_issues(result):
+    """Find completed trades whose entry and exit prices came from different sources.
+
+    Returns:
+        A list of dictionaries used by the report template to warn about saved
+        legacy results that mixed sample and live/imported price rows.
+    """
     trades = list(result.trades.all())
     timestamps = []
     for trade in trades:
@@ -59,6 +78,21 @@ def trade_source_issues(result):
 
 @transaction.atomic
 def run_backtest(user, strategy, start_date, end_date):
+    """Run a strategy over historical prices and persist the result.
+
+    Parameters:
+        user: Owner of the saved result.
+        strategy: Strategy configuration to simulate.
+        start_date/end_date: Requested date range.
+
+    Returns:
+        The created ``BacktestResult``. Related ``BacktestTrade`` rows are
+        created before the result is returned.
+
+    Raises:
+        ValueError: if the selected date range has too little price history for
+        the strategy's long moving-average window.
+    """
     prices = list(backtest_price_queryset(strategy.stock, start_date, end_date))
     if len(prices) < strategy.long_window:
         raise ValueError('Not enough price history for the selected strategy and date range.')
@@ -77,10 +111,12 @@ def run_backtest(user, strategy, start_date, end_date):
     for item in signals:
         point = item['price']
         close = point.close_price
+        # Risk exits are evaluated on every row while a position is open.
         stop_hit = entry_price and close <= entry_price * (Decimal('1') - strategy.stop_loss_percent / Decimal('100'))
         target_hit = entry_price and close >= entry_price * (Decimal('1') + strategy.take_profit_percent / Decimal('100'))
 
         if position_qty > 0 and (item['signal'] == 'sell' or stop_hit or target_hit):
+            # Closing a position realizes P/L and records why the trade exited.
             cash += position_qty * close
             pnl = (close - entry_price) * position_qty
             reason = 'stop_loss' if stop_hit else 'take_profit' if target_hit else 'signal'
@@ -93,6 +129,7 @@ def run_backtest(user, strategy, start_date, end_date):
             entry_price = None
             open_trade = None
         elif position_qty == 0 and item['signal'] == 'buy':
+            # Position size is a percentage of available simulated cash.
             allocation = cash * strategy.position_size_percent / Decimal('100')
             if allocation > 0:
                 position_qty = quantity(allocation / close)
@@ -105,6 +142,7 @@ def run_backtest(user, strategy, start_date, end_date):
                         quantity=position_qty,
                     )
 
+        # Equity includes both cash and the marked-to-market open position.
         equity = cash + position_qty * close
         peak_equity = max(peak_equity, equity)
         if peak_equity:
@@ -114,6 +152,8 @@ def run_backtest(user, strategy, start_date, end_date):
 
     final_price = prices[-1].close_price
     if position_qty > 0 and open_trade:
+        # Any open position is liquidated on the final available price so the
+        # result has a concrete final balance and completed trade list.
         cash += position_qty * final_price
         pnl = (final_price - entry_price) * position_qty
         open_trade.exited_at = prices[-1].timestamp
@@ -126,6 +166,7 @@ def run_backtest(user, strategy, start_date, end_date):
     total_return = percent(((final_balance - initial_balance) / initial_balance) * Decimal('100'))
     wins = sum(1 for trade in completed if trade.pnl > 0)
     losses = sum(1 for trade in completed if trade.pnl <= 0)
+    # If there are no losses, the ratio is stored as the number of wins.
     win_loss_ratio = percent(Decimal(wins) / Decimal(losses)) if losses else percent(wins)
 
     result = BacktestResult.objects.create(
@@ -144,5 +185,7 @@ def run_backtest(user, strategy, start_date, end_date):
     )
     for trade in completed:
         trade.result = result
+    # Trades are bulk-created after the result exists to keep the simulation
+    # transaction compact.
     BacktestTrade.objects.bulk_create(completed)
     return result

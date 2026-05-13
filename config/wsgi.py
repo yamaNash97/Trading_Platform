@@ -11,6 +11,8 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
+# Point WSGI servers at the project settings module before loading Django.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
+# Module-level callable used by traditional synchronous deployment servers.
 application = get_wsgi_application()

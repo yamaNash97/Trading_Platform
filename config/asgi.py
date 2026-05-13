@@ -11,6 +11,8 @@ import os
 
 from django.core.asgi import get_asgi_application
 
+# Point ASGI servers at the project settings module before loading Django.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
+# Module-level callable used by async-capable deployment servers.
 application = get_asgi_application()

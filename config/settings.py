@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Local trading-platform apps.
     'accounts',
     'market_data',
     'strategies',
@@ -64,6 +65,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        # Project-level templates live in the top-level templates/ directory.
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -84,6 +86,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 REDIS_URL = os.environ.get('REDIS_URL')
 if REDIS_URL:
+    # Production-like deployments can opt into Redis by setting REDIS_URL.
     CACHES = {
         'default': {
             'BACKEND': 'django_redis.cache.RedisCache',
@@ -94,6 +97,7 @@ if REDIS_URL:
         },
     }
 else:
+    # Local development uses an in-memory cache with no external service.
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -106,6 +110,7 @@ else:
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 if os.environ.get('POSTGRES_DB'):
+    # PostgreSQL is selected when POSTGRES_DB is present in the environment.
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -117,6 +122,7 @@ if os.environ.get('POSTGRES_DB'):
         }
     }
 else:
+    # SQLite keeps the educational/local setup easy to run.
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -165,8 +171,10 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
     ]
 
+# Central auth navigation targets used by Django's built-in auth views.
 LOGIN_REDIRECT_URL = 'portfolio:dashboard'
 LOGOUT_REDIRECT_URL = 'portfolio:landing'
 LOGIN_URL = 'login'
 
+# Market-data imports read this key when calling Alpha Vantage.
 ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY', 'C01BPJNDOO2MWFPH')
