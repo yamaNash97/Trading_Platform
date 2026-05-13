@@ -310,6 +310,9 @@ def chart_context(stock, start_date=None, end_date=None, refresh_live=False, lim
         timeframe_delta = dict((value, delta) for value, _label, delta in TIMEFRAME_OPTIONS)[active_timeframe]
         prices = prices.filter(timestamp__gte=latest_price.timestamp - timeframe_delta)
 
+    if prices.exclude(source='sample').exists():
+        prices = prices.exclude(source='sample')
+
     prices = list(prices)
     if len(prices) > limit:
         prices = prices[-limit:]
