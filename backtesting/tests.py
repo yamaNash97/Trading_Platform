@@ -72,7 +72,7 @@ class BacktestEngineTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '1260981.27%')
 
-    def test_strategy_chart_fragment_renders_indicators(self):
+    def test_strategy_chart_fragment_renders_chart_controls(self):
         user = User.objects.create_user(username='chart-user', password='test-pass-123')
         stock = Stock.objects.create(symbol='AAPL', name='Apple Inc.')
         microsoft = Stock.objects.create(symbol='MSFT', name='Microsoft Corporation')
@@ -97,7 +97,7 @@ class BacktestEngineTests(TestCase):
         self.assertNotContains(response, 'Bars')
         self.assertNotContains(response, 'data-chart-view')
         self.assertContains(response, 'EMA(50)')
-        self.assertContains(response, 'RSI(14)')
+        self.assertNotContains(response, 'RSI(14)')
         self.assertContains(response, 'name="stock"')
         self.assertContains(response, f'value="{stock.pk}"')
         self.assertContains(response, f'value="{microsoft.pk}" selected')

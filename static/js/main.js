@@ -233,8 +233,7 @@ function setupMarketChartCard(card) {
         payload: payload,
         chart: null,
         indicators: {
-            ema: true,
-            rsi: false
+            ema: true
         },
         visibleStart: 0,
         visibleEnd: payload ? Math.max(payload.rows.length - 1, 0) : 0,
@@ -513,20 +512,6 @@ function renderMarketChart(state) {
                         color: 'rgba(45, 53, 70, 0.72)'
                     }
                 },
-                rsi: {
-                    position: 'right',
-                    display: false,
-                    min: 0,
-                    max: 100,
-                    grid: {
-                        drawOnChartArea: false
-                    },
-                    ticks: {
-                        callback(value) {
-                            return Number(value).toFixed(0);
-                        }
-                    }
-                },
                 volume: {
                     display: false,
                     min: 0,
@@ -588,7 +573,6 @@ function buildMarketChartDatasets(rows) {
             order: 8
         },
         lineDataset('EMA(50)', rows.map(row => row.ema), '#ffa502', 'ema', 'ema'),
-        lineDataset('RSI(14)', rows.map(row => row.rsi), '#d8b4fe', 'rsi', 'rsi', 'rsi')
     ];
 }
 
@@ -624,7 +608,6 @@ function applyMarketChartVisibility(state) {
         }
     });
 
-    state.chart.options.scales.rsi.display = Boolean(state.indicators.rsi);
     state.chart.$marketChart = state;
     state.chart.update();
     updateMarketChartLegend(state);
@@ -1149,8 +1132,6 @@ function marketTooltipLabel(context, currency) {
             return `Close: ${formatCurrency(value, currency)}`;
         case 'ema':
             return `EMA(50): ${formatCurrency(value, currency)}`;
-        case 'rsi':
-            return `RSI(14): ${Number(value).toFixed(2)}`;
         case 'volume':
             return `Volume: ${formatVolume(value)}`;
         default:

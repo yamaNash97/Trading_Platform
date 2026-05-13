@@ -28,7 +28,7 @@ class PaperTradingTests(TestCase):
         self.assertEqual(holding.quantity, 1)
         self.assertLess(account.balance, account.starting_balance)
 
-    def test_price_chart_fragment_renders_indicators(self):
+    def test_price_chart_fragment_renders_chart_controls(self):
         user = User.objects.create_user(username='paper-chart', password='test-pass-123')
         stock = Stock.objects.create(symbol='TSLA', name='Tesla Inc.')
         microsoft = Stock.objects.create(symbol='MSFT', name='Microsoft Corporation')
@@ -44,7 +44,7 @@ class PaperTradingTests(TestCase):
         self.assertNotContains(response, 'Bars')
         self.assertNotContains(response, 'data-chart-view')
         self.assertContains(response, 'EMA(50)')
-        self.assertContains(response, 'RSI(14)')
+        self.assertNotContains(response, 'RSI(14)')
         self.assertContains(response, 'name="stock"')
         self.assertContains(response, f'value="{stock.pk}"')
         self.assertContains(response, f'value="{microsoft.pk}" selected')

@@ -1,6 +1,5 @@
 import math
 from datetime import datetime, time, timedelta
-from statistics import pstdev
 from uuid import uuid4
 
 from django.utils import timezone
@@ -118,84 +117,9 @@ def exponential_moving_average(values, period):
     return averages
 
 
-def simple_moving_average(values, period):
-    averages = []
-    window = []
-    running_total = 0
-    for value in values:
-        window.append(value)
-        running_total += value
-        if len(window) > period:
-            running_total -= window.pop(0)
-        averages.append(running_total / period if len(window) == period else None)
-    return averages
-
-
-def relative_strength_index(values, period=14):
-    if not values:
-        return []
-
-    rsi_values = [None]
-    gains = []
-    losses = []
-    avg_gain = None
-    avg_loss = None
-
-    for index in range(1, len(values)):
-        change = values[index] - values[index - 1]
-        gain = max(change, 0)
-        loss = max(-change, 0)
-
-        if len(gains) < period:
-            gains.append(gain)
-            losses.append(loss)
-            if len(gains) == period:
-                avg_gain = sum(gains) / period
-                avg_loss = sum(losses) / period
-        else:
-            avg_gain = ((avg_gain * (period - 1)) + gain) / period
-            avg_loss = ((avg_loss * (period - 1)) + loss) / period
-
-        if avg_gain is None or avg_loss is None:
-            rsi_values.append(None)
-        else:
-            rsi_values.append(100 if avg_loss == 0 else 100 - (100 / (1 + (avg_gain / avg_loss))))
-
-    return rsi_values
-
-
-def moving_average_convergence_divergence(values, fast_period=12, slow_period=26, signal_period=9):
-    fast = exponential_moving_average(values, fast_period)
-    slow = exponential_moving_average(values, slow_period)
-    macd = [fast_value - slow_value for fast_value, slow_value in zip(fast, slow)]
-    signal = exponential_moving_average(macd, signal_period)
-    histogram = [macd_value - signal_value for macd_value, signal_value in zip(macd, signal)]
-    return macd, signal, histogram
-
-
-def bollinger_bands(values, period=20, deviations=2):
-    middle = simple_moving_average(values, period)
-    upper = []
-    lower = []
-    for index, average in enumerate(middle):
-        if average is None:
-            upper.append(None)
-            lower.append(None)
-            continue
-        window = values[index - period + 1:index + 1]
-        band_width = pstdev(window) * deviations
-        upper.append(average + band_width)
-        lower.append(average - band_width)
-    return upper, middle, lower
-
-
-def with_indicators(prices, rsi_period=14, ema_period=50, sma_period=20, momentum_period=10):
+def with_indicators(prices, ema_period=50, momentum_period=10):
     closes = [float(price.close_price) for price in prices]
     ema_values = exponential_moving_average(closes, ema_period)
-    sma_values = simple_moving_average(closes, sma_period)
-    rsi_values = relative_strength_index(closes, rsi_period)
-    macd_values, macd_signal_values, macd_histogram_values = moving_average_convergence_divergence(closes)
-    bollinger_upper_values, bollinger_middle_values, bollinger_lower_values = bollinger_bands(closes, sma_period)
     first_close = closes[0] if closes else None
     rows = []
 
@@ -215,14 +139,6 @@ def with_indicators(prices, rsi_period=14, ema_period=50, sma_period=20, momentu
                 'close': close,
                 'volume': int(price.volume),
                 'ema': ema_values[index],
-                'sma': sma_values[index],
-                'rsi': rsi_values[index],
-                'macd': macd_values[index],
-                'macd_signal': macd_signal_values[index],
-                'macd_histogram': macd_histogram_values[index],
-                'bollinger_upper': bollinger_upper_values[index],
-                'bollinger_middle': bollinger_middle_values[index],
-                'bollinger_lower': bollinger_lower_values[index],
                 'momentum': momentum,
                 'velocity': velocity,
                 'change_percent': change_percent,
@@ -251,14 +167,6 @@ def serialise_chart_row(row):
         'close': serialise_number(row['close']),
         'volume': row['volume'],
         'ema': serialise_number(row['ema']),
-        'sma': serialise_number(row['sma']),
-        'rsi': serialise_number(row['rsi']),
-        'macd': serialise_number(row['macd']),
-        'macdSignal': serialise_number(row['macd_signal']),
-        'macdHistogram': serialise_number(row['macd_histogram']),
-        'bollingerUpper': serialise_number(row['bollinger_upper']),
-        'bollingerMiddle': serialise_number(row['bollinger_middle']),
-        'bollingerLower': serialise_number(row['bollinger_lower']),
         'momentum': serialise_number(row['momentum']),
         'velocity': serialise_number(row['velocity']),
         'changePercent': serialise_number(row['change_percent']),
@@ -271,9 +179,6 @@ def price_axis(rows):
     values = []
     for row in rows:
         values.extend([row['open'], row['high'], row['low'], row['close'], row['ema']])
-        for key in ('sma', 'bollinger_upper', 'bollinger_lower'):
-            if row.get(key) is not None:
-                values.append(row[key])
     minimum = min(values)
     maximum = max(values)
     first_close = rows[0]['close'] if rows else 0
@@ -380,13 +285,6 @@ def chart_context(stock, start_date=None, end_date=None, refresh_live=False, lim
             'isPositive': change >= 0,
             'indicators': {
                 'emaPeriod': 50,
-                'smaPeriod': 20,
-                'rsiPeriod': 14,
-                'macdFast': 12,
-                'macdSlow': 26,
-                'macdSignal': 9,
-                'bollingerPeriod': 20,
-                'bollingerDeviations': 2,
                 'momentumPeriod': 10,
             },
         },

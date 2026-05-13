@@ -87,3 +87,21 @@ class MarketDataTests(TestCase):
 
         self.assertEqual([row['source'] for row in chart['payload']['rows']], ['yfinance'])
         self.assertEqual(chart['last_price'], 7374.56)
+
+    def test_chart_payload_excludes_removed_technical_indicators(self):
+        stock = Stock.objects.create(symbol='AAPL', name='Apple Inc.')
+        seed_sample_prices(stock, days=30)
+
+        chart = chart_context(stock)
+        row = chart['payload']['rows'][-1]
+
+        self.assertIn('ema', row)
+        self.assertNotIn('sma', row)
+        self.assertNotIn('rsi', row)
+        self.assertNotIn('macd', row)
+        self.assertNotIn('macdSignal', row)
+        self.assertNotIn('macdHistogram', row)
+        self.assertNotIn('bollingerUpper', row)
+        self.assertNotIn('bollingerMiddle', row)
+        self.assertNotIn('bollingerLower', row)
+        self.assertEqual(chart['payload']['indicators'], {'emaPeriod': 50, 'momentumPeriod': 10})

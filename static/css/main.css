@@ -187,22 +187,6 @@
   background: #ffa502;
 }
 
-.market-legend-swatch.sma {
-  background: #8fdbff;
-}
-
-.market-legend-swatch.rsi {
-  background: #d8b4fe;
-}
-
-.market-legend-swatch.macd {
-  background: #2ed573;
-}
-
-.market-legend-swatch.bollinger {
-  background: #4dabf7;
-}
-
 .market-chart-shell {
   position: relative;
   min-height: 420px;
