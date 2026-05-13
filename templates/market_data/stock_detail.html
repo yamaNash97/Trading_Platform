@@ -1,4 +1,13 @@
 {% extends "base.html" %}
+{% comment %}
+Purpose: Detail page for one tracked stock and its recent prices.
+Rendered by: market_data.views.stock_detail.
+Main sections: stock header/actions, HTMX-loaded chart shell, and recent price
+table.
+Required context: stock, prices.
+HTMX/JS: chart shell requests market_data:stock_chart on load and swaps in the
+shared _price_chart.html fragment.
+{% endcomment %}
 {% block title %}{{ stock.symbol }}{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
@@ -11,6 +20,7 @@
 <div
   id="stock-price-chart"
   class="mb-3"
+  {# Load the reusable chart fragment after the page shell renders. #}
   hx-get="{% url 'market_data:stock_chart' %}?stock={{ stock.pk }}"
   hx-trigger="load"
   hx-swap="innerHTML"
@@ -37,6 +47,7 @@
             <td>{{ price.source }}</td>
           </tr>
         {% empty %}
+          {# A stock can exist before sample/imported prices have been created. #}
           <tr><td colspan="7" class="text-secondary">No price data available.</td></tr>
         {% endfor %}
       </tbody>

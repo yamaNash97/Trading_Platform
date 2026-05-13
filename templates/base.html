@@ -1,4 +1,14 @@
 {% load static %}
+{% comment %}
+Purpose: Shared application shell for authenticated trading pages and signup.
+Rendered by: Views that extend this template across market_data, strategies,
+backtesting, paper_trading, portfolio, and accounts.
+Main sections: static assets, responsive navbar, flash messages, page content
+block, common JavaScript includes, and icon refresh hook.
+Required context: user, messages, and any child-template blocks.
+HTMX/JS: loads HTMX, Chart.js, Lucide, and main.js; refreshes icons after HTMX
+swaps because swapped fragments can contain new data-lucide placeholders.
+{% endcomment %}
 <!doctype html>
 <html lang="en">
 
@@ -21,6 +31,7 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <div id="mainNav" class="collapse navbar-collapse">
+        {# Authenticated users see the app navigation; anonymous visitors only get a sign-in link. #}
         {% if user.is_authenticated %}
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item"><a class="nav-link" href="{% url 'market_data:stock_list' %}">Market</a></li>
@@ -43,6 +54,7 @@
 
   <main class="container py-4">
     {% for message in messages %}
+    {# data-auto-dismiss-* is read by static/js/main.js to fade flash messages after a delay. #}
     <div class="alert alert-{{ message.tags|default:'info' }} fade show" role="alert" data-auto-dismiss-alert data-auto-dismiss-ms="10000">
       {{ message }}
     </div>
@@ -55,6 +67,8 @@
   <script src="{% static 'js/lucide.min.js' %}"></script>
   <script src="{% static 'js/main.js' %}"></script>
   <script>
+    // HTMX replaces chart fragments without a full page load, so Lucide icons
+    // must be re-created after each swap.
     function refreshLucideIcons() {
       window.lucide && lucide.createIcons({ attrs: { width: 16, height: 16 } });
     }

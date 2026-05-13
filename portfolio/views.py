@@ -7,33 +7,34 @@ from backtesting.models import BacktestResult
 from paper_trading.models import Transaction
 from paper_trading.services import get_or_create_account
 from portfolio.models import PortfolioHolding
-from market_data.models import Stock
 
 
 def landing(request):
-    prices = {}
-    for symbol in ('WTI', 'GOLD', 'NATURAL_GAS'):
-        stock = Stock.objects.filter(symbol=symbol).first()
-        latest = stock.price_data.order_by('-timestamp').first() if stock else None
-        if latest:
-            prices[symbol.replace('_', ' ')] = latest.close_price
+    """Render the public marketing page.
 
-    if not prices:
-        prices = {
-            'WTI': '109.76',
-            'GOLD': '4590.07',
-            'NATURAL GAS': '2.67',
-        }
-
-    return render(request, 'landing/index.html', {'prices': prices})
+    The landing template is static and does not require market data context.
+    Keeping this view lean avoids querying commodity prices that are not
+    displayed anywhere in the page.
+    """
+    return render(request, 'landing/index.html')
 
 
 @login_required
 def dashboard(request):
+    """Render the authenticated portfolio dashboard.
+
+    The view gathers the current paper account, open holdings, recent
+    transactions, and recent backtests for the signed-in user. Totals are
+    calculated in Python because they combine account cash with per-holding
+    model methods that look up the latest saved market price.
+    """
     account = get_or_create_account(request.user)
+    # select_related keeps stock lookups from turning each table row into an
+    # extra query when the template renders symbols and prices.
     holdings = list(PortfolioHolding.objects.filter(user=request.user).select_related('stock'))
     portfolio_value = sum((holding.market_value() for holding in holdings), Decimal('0'))
     unrealized_pnl = sum((holding.unrealized_pnl() for holding in holdings), Decimal('0'))
+    # The dashboard only needs compact recent activity summaries.
     recent_transactions = Transaction.objects.filter(user=request.user).select_related('stock')[:8]
     backtests = BacktestResult.objects.filter(user=request.user).select_related('strategy', 'stock')[:5]
     total_value = account.balance + portfolio_value

@@ -1,4 +1,12 @@
 {% extends "base.html" %}
+{% comment %}
+Purpose: Market data index for creating stocks and browsing tracked symbols.
+Rendered by: market_data.views.stock_list.
+Main sections: header actions, StockForm card, and stock table with price-row
+counts.
+Required context: form, stocks.
+HTMX/JS: no HTMX; Lucide icons are initialized by base.html/main.js.
+{% endcomment %}
 {% block title %}Market Data{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
@@ -14,6 +22,7 @@
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm p-3">
       <h2 class="h5">Add stock</h2>
+      {# StockForm widgets already include Bootstrap classes, so form.as_p is safe here. #}
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
@@ -45,6 +54,7 @@
                   href="{% url 'market_data:stock_detail' stock.pk %}"><i data-lucide="line-chart"></i> Open</a></td>
             </tr>
             {% empty %}
+            {# Empty state covers a brand-new database before any stock rows are available. #}
             <tr>
               <td colspan="5" class="text-secondary">Add a stock to start testing strategies.</td>
             </tr>

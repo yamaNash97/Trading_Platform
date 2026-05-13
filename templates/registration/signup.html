@@ -1,10 +1,19 @@
 {% extends "base.html" %}
+{% comment %}
+Purpose: Account registration page.
+Rendered by: accounts.views.signup.
+Main sections: centered signup card, SignUpForm fields, submit action, and home
+link.
+Required context: form.
+HTMX/JS: no HTMX; form posts directly to the signup view.
+{% endcomment %}
 {% block title %}Create account{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-md-6 col-lg-5">
     <div class="card border-0 shadow-sm p-3">
       <h1 class="h4 mb-3">Create account</h1>
+      {# SignUpForm applies Bootstrap classes in __init__, so form.as_p keeps this template compact. #}
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}

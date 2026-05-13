@@ -1,4 +1,13 @@
 {% load static %}
+{% comment %}
+Purpose: Public landing page for TradeSim.
+Rendered by: portfolio.views.landing.
+Main sections: fixed navigation, hero, automation summary, feature cards,
+testimonials, risk disclosure, and footer credits.
+Required context: none; all content and image references are static.
+HTMX/JS: no HTMX behavior. Bootstrap Icons and landingStyle.css provide the
+visual presentation.
+{% endcomment %}
 <!doctype html>
 <html lang="en">
 
@@ -12,7 +21,6 @@
 	<meta charset="utf-8">
 	<meta content="width=device-width, initial-scale=1" name="viewport">
 	<link href="{% static 'css/bootstrap-5.3.3.min.css' %}" rel="stylesheet">
-	<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"> -->
 	<link rel="stylesheet" href="{% static 'css/bootstrap-icons.min.css' %}">
 	<link href="{% static 'css/landingStyle.css' %}" rel="stylesheet">
 
@@ -21,7 +29,7 @@
 </head>
 
 <body class="text-light">
-	<!-- Sticky Navigation Bar -->
+	{% comment %}Fixed-top navbar keeps login/signup visible while scrolling the long marketing page.{% endcomment %}
 	<nav class="navbar navbar-sticky fixed-top">
 		<div class="container-fluid">
 			<a class="navbar-brand" href="{% url 'portfolio:landing' %}">
@@ -34,10 +42,11 @@
 		</div>
 	</nav>
 
-	<!-- Header Spacer -->
+	{% comment %}Spacer offsets the fixed navbar so the hero starts below it.{% endcomment %}
 	<header class="py-5" style="margin-top: 60px;"></header>
 
 	<main>
+		{% comment %}Hero section uses a static bitmap asset to make the product category clear immediately.{% endcomment %}
 		<section class="container py-5 animate-fade-up">
 			<div class="row justify-content-center text-center">
 				<div class="col-12 col-lg-10">
@@ -57,7 +66,7 @@
 			</div>
 		</section>
 
-		<!-- Automation Section -->
+		{% comment %}Automation section pairs supporting copy with the spreadsheet image asset.{% endcomment %}
 		<section class="container py-5">
 			<div class="row align-items-center g-5">
 				<div class="col-12 col-md-6 text-center text-md-start">
@@ -80,7 +89,7 @@
 			</div>
 		</section>
 
-		<!-- Features Section -->
+		{% comment %}Feature rows use Bootstrap's responsive grid to stack on mobile and align on desktop.{% endcomment %}
 		<section class="container py-5" id="features">
 			<div class="row justify-content-center mb-5">
 				<div class="col-12 text-center">
@@ -89,7 +98,7 @@
 				</div>
 			</div>
 
-			<!-- Smart Segments Feature -->
+			{% comment %}Smart Segments is the featured two-column visual/text block in this section.{% endcomment %}
 			<div class="row justify-content-center mb-5">
 				<div class="col-12 col-lg-10">
 					<div class="row align-items-center g-4">
@@ -108,7 +117,7 @@
 				</div>
 			</div>
 
-			<!-- Feature Cards Grid -->
+			{% comment %}Feature cards collapse from three columns to one column through Bootstrap grid classes.{% endcomment %}
 			<div class="row g-4 pb-5">
 				<div class="col-12 col-md-6 col-lg-4">
 					<div class="feature-card">
@@ -136,7 +145,7 @@
 				</div>
 			</div>
 		</section>
-		<!-- Testimonials Section -->
+		{% comment %}Testimonials are static trust-building content; they do not require view context.{% endcomment %}
 		<section class="container py-5">
 			<div class="row justify-content-center mb-5">
 				<div class="col-12 text-center">

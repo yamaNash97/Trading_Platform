@@ -1,4 +1,11 @@
 {% extends "base.html" %}
+{% comment %}
+Purpose: Read-only strategy configuration summary.
+Rendered by: strategies.views.strategy_detail.
+Main sections: strategy header, risk/account cards, and parameter grid.
+Required context: strategy.
+HTMX/JS: no HTMX; backtest navigation sends users to the backtesting app.
+{% endcomment %}
 {% block title %}{{ strategy.name }}{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
@@ -6,12 +13,14 @@
   <a class="btn btn-success" href="{% url 'backtesting:backtest_list' %}"><i data-lucide="play"></i> Run backtest</a>
 </div>
 <div class="row g-3">
+  {# Metric cards use equal-height Bootstrap columns for quick strategy review. #}
   <div class="col-md-4"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Initial balance</div><div class="fs-3 fw-bold">${{ strategy.initial_balance|floatformat:2 }}</div></div></div>
   <div class="col-md-4"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Position size</div><div class="fs-3 fw-bold">{{ strategy.position_size_percent }}%</div></div></div>
   <div class="col-md-4"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Risk exits</div><div class="fs-3 fw-bold">{{ strategy.stop_loss_percent }} / {{ strategy.take_profit_percent }}%</div></div></div>
 </div>
 <div class="card border-0 shadow-sm p-3 mt-3">
   <h2 class="h5">Parameters</h2>
+  {# Parameter properties read from Strategy.parameters with model-level defaults. #}
   <div class="row">
     <div class="col-sm-6 col-lg-3"><strong>Short MA</strong><div>{{ strategy.short_window }}</div></div>
     <div class="col-sm-6 col-lg-3"><strong>Long MA</strong><div>{{ strategy.long_window }}</div></div>

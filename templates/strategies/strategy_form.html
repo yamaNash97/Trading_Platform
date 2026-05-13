@@ -1,4 +1,12 @@
 {% extends "base.html" %}
+{% comment %}
+Purpose: Form for creating a new trading strategy.
+Rendered by: strategies.views.strategy_create.
+Main sections: StrategyForm grid and save/cancel actions.
+Required context: form.
+HTMX/JS: no HTMX; Bootstrap validation classes and Lucide icons are handled by
+base.html/main.js.
+{% endcomment %}
 {% block title %}New Strategy{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
@@ -7,9 +15,11 @@
       <h1 class="h4 mb-3">New strategy</h1>
       <form method="post">
         {% csrf_token %}
+        {# Two-column Bootstrap grid keeps many strategy parameters readable on desktop. #}
         <div class="row">
           {% for field in form %}
             <div class="col-md-6">
+              {# Show per-field validation near the input that caused it. #}
               {{ field.errors }}
               <p>{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="form-text">{{ field.help_text }}</span>{% endif %}</p>
             </div>

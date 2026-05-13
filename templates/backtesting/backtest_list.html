@@ -1,4 +1,13 @@
 {% extends "base.html" %}
+{% comment %}
+Purpose: Backtest launcher and history list.
+Rendered by: backtesting.views.backtest_list.
+Main sections: BacktestRunForm card, HTMX strategy chart preview, and saved
+results table.
+Required context: form, results.
+HTMX/JS: chart shell loads backtesting:strategy_price_chart on page load and
+whenever the strategy select changes.
+{% endcomment %}
 {% block title %}Backtests{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
@@ -8,6 +17,7 @@
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm p-3">
       <h2 class="h5">Run backtest</h2>
+      {# The form queryset is user-scoped in BacktestRunForm.__init__. #}
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
@@ -16,6 +26,7 @@
     </div>
   </div>
   <div class="col-lg-8">
+    {# HTMX swaps only this chart shell, preserving the form and result table. #}
     <div
       id="backtest-price-chart"
       hx-get="{% url 'backtesting:strategy_price_chart' %}"
@@ -42,6 +53,7 @@
             <td>{{ result.stock.symbol }}</td>
             <td>{{ result.start_date }} to {{ result.end_date }}</td>
             <td>${{ result.final_balance|floatformat:2 }}</td>
+            {# Return styling makes losing backtests stand out in the history table. #}
             <td class="{% if result.total_return < 0 %}text-danger{% else %}text-success{% endif %}">{{ result.total_return }}%</td>
             <td>{{ result.number_of_trades }}</td>
             <td class="text-end"><a class="btn btn-outline-secondary btn-sm" href="{% url 'backtesting:backtest_detail' result.pk %}"><i data-lucide="bar-chart-3"></i> Report</a></td>

@@ -1,4 +1,11 @@
 {% extends "base.html" %}
+{% comment %}
+Purpose: List of the user's reusable trading strategy configurations.
+Rendered by: strategies.views.strategy_list.
+Main sections: header action and strategy table.
+Required context: strategies.
+HTMX/JS: no HTMX; Lucide icons are initialized by base.html/main.js.
+{% endcomment %}
 {% block title %}Strategies{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
@@ -17,6 +24,7 @@
             <td>{{ strategy.stock.symbol }}</td>
             <td>${{ strategy.initial_balance|floatformat:2 }}</td>
             <td>{{ strategy.position_size_percent }}%</td>
+            {# Active strategies are eligible for backtests; paused ones stay visible for review. #}
             <td>{% if strategy.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Paused</span>{% endif %}</td>
             <td class="text-end"><a class="btn btn-outline-secondary btn-sm" href="{% url 'strategies:strategy_detail' strategy.pk %}"><i data-lucide="settings-2"></i> Open</a></td>
           </tr>

@@ -1,4 +1,14 @@
 {% extends "base.html" %}
+{% comment %}
+Purpose: Authenticated account overview for paper-trading performance.
+Rendered by: portfolio.views.dashboard.
+Main sections: account summary metrics, open positions, recent transactions,
+and latest backtests.
+Required context: account, holdings, portfolio_value, unrealized_pnl,
+recent_transactions, backtests, total_value, user.
+HTMX/JS: no HTMX on this page; Lucide icons and alert behavior come from
+base.html/main.js.
+{% endcomment %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
@@ -10,9 +20,11 @@
 </div>
 
 <div class="row g-3 mb-4">
+  {# Bootstrap grid keeps four summary cards on wide screens and stacks them responsively. #}
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Cash balance</div><div class="fs-3 fw-bold">${{ account.balance|floatformat:2 }}</div></div></div>
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Portfolio value</div><div class="fs-3 fw-bold">${{ portfolio_value|floatformat:2 }}</div></div></div>
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Total account value</div><div class="fs-3 fw-bold">${{ total_value|floatformat:2 }}</div></div></div>
+  {# Negative P/L is styled red; zero and positive values are styled green for quick scanning. #}
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Unrealized P/L</div><div class="fs-3 fw-bold {% if unrealized_pnl < 0 %}text-danger{% else %}text-success{% endif %}">${{ unrealized_pnl|floatformat:2 }}</div></div></div>
 </div>
 
@@ -33,6 +45,7 @@
                 <td>{{ holding.quantity|floatformat:4 }}</td>
                 <td>${{ holding.average_buy_price|floatformat:2 }}</td>
                 <td>${{ holding.market_value|floatformat:2 }}</td>
+                {# Holding-level P/L uses the same red/green convention as the summary card. #}
                 <td class="{% if holding.unrealized_pnl < 0 %}text-danger{% else %}text-success{% endif %}">${{ holding.unrealized_pnl|floatformat:2 }}</td>
               </tr>
             {% empty %}
@@ -64,6 +77,7 @@
       {% for result in backtests %}
         <div class="d-flex justify-content-between border-bottom py-2">
           <a href="{% url 'backtesting:backtest_detail' result.pk %}">{{ result.strategy.name }}</a>
+          {# Backtest returns can be negative; color makes historical performance skimmable. #}
           <span class="{% if result.total_return < 0 %}text-danger{% else %}text-success{% endif %}">{{ result.total_return }}%</span>
         </div>
       {% empty %}
