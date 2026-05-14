@@ -25,7 +25,7 @@ zoom, and countdown behavior.
           <h2 class="h4 mb-0 text-light">{{ chart.stock.symbol|default:"Market" }}</h2>
           {# Price and change badges only show when the chart has data. #}
           {% if chart.has_data %}
-          <span class="fs-5">${{ chart.last_price|floatformat:2 }}</span>
+          <span class="fs-5 text-light">${{ chart.last_price|floatformat:2 }}</span>
           <span class="badge {% if chart.is_positive %}text-bg-success{% else %}text-bg-danger{% endif %}">
             {{ chart.change|floatformat:2 }} / {{ chart.change_percent|floatformat:2 }}%
           </span>
