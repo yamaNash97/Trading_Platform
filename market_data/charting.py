@@ -1,9 +1,8 @@
-"""Chart data preparation for reusable market price fragments.
+"""Build data for reusable market price charts.
 
-The templates and JavaScript receive a compact ``chart`` context dictionary
-from this module. Python is responsible for filtering price rows, preferring
-live/provider data over sample rows, computing technical indicators, and
-serialising the payload that Chart.js reads from a ``json_script`` tag.
+Templates and JavaScript get a small ``chart`` dictionary from this module.
+Python filters price rows, prefers live/API data over sample rows, calculates
+indicators, and builds the JSON that Chart.js reads.
 """
 
 import math
@@ -27,7 +26,7 @@ TIMEFRAME_OPTIONS = (
 
 
 def finite_float(value):
-    """Return a finite float or ``None`` for missing/invalid provider values."""
+    """Return a finite float or ``None`` for missing or invalid API values."""
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -46,10 +45,10 @@ def refresh_yfinance_prices(stock, period='5d', interval='15m'):
         interval: yfinance bar interval.
 
     Returns:
-        Number of newly created rows. Existing timestamps are updated in place.
+        Number of new rows. Existing timestamps are updated in place.
 
     Raises:
-        RuntimeError: when yfinance is unavailable or returns no rows.
+        RuntimeError: when yfinance is not installed or returns no rows.
     """
     try:
         import yfinance as yf
@@ -70,8 +69,8 @@ def refresh_yfinance_prices(stock, period='5d', interval='15m'):
     imported = 0
     current_tz = timezone.get_current_timezone()
     for row_index, row in history.tail(180).iterrows():
-        # yfinance can produce NaN values; each field is normalised before it is
-        # written to the Decimal-based PriceData model.
+        # yfinance can return NaN values; each field is cleaned before it is
+        # saved to the Decimal-based PriceData model.
         close = finite_float(row.get('Close'))
         if close is None:
             continue
@@ -113,7 +112,7 @@ def normalise_timeframe(value, default=DEFAULT_TIMEFRAME):
 
 
 def chart_request_options(request, default_refresh_live=False, default_timeframe=DEFAULT_TIMEFRAME):
-    """Translate chart query parameters into ``chart_context`` options."""
+    """Turn chart query parameters into ``chart_context`` options."""
     refresh_value = request.GET.get('refresh')
     refresh_live = default_refresh_live if refresh_value is None else refresh_value == '1'
     return {
@@ -123,7 +122,7 @@ def chart_request_options(request, default_refresh_live=False, default_timeframe
 
 
 def source_label(source):
-    """Return a human-readable label for a PriceData source value."""
+    """Return a clear label for a PriceData source value."""
     if source == 'yfinance':
         return 'Live via yfinance'
     if source == 'sample':
@@ -136,7 +135,7 @@ def source_label(source):
 
 
 def exponential_moving_average(values, period):
-    """Calculate an EMA series aligned to the input close-price values."""
+    """Calculate an EMA series that lines up with the close prices."""
     alpha = 2 / (period + 1)
     ema = None
     averages = []
@@ -147,7 +146,7 @@ def exponential_moving_average(values, period):
 
 
 def relative_strength_index(values, period=14):
-    """Calculate an RSI series aligned to the input close-price values."""
+    """Calculate an RSI series that lines up with the close prices."""
     if not values:
         return []
 
@@ -183,8 +182,8 @@ def relative_strength_index(values, period=14):
 def with_indicators(prices, rsi_period=14, ema_period=50, momentum_period=10):
     """Transform PriceData rows into chart rows with technical indicators.
 
-    Each returned dict is serialisable after ``serialise_chart_row`` and
-    includes close-price momentum, percent velocity, EMA, and RSI values.
+    Each returned dict can be turned into JSON by ``serialise_chart_row``. It
+    includes close price, momentum, percent change speed, EMA, and RSI values.
     """
     closes = [float(price.close_price) for price in prices]
     ema_values = exponential_moving_average(closes, ema_period)
@@ -221,14 +220,14 @@ def with_indicators(prices, rsi_period=14, ema_period=50, momentum_period=10):
 
 
 def serialise_number(value, digits=4):
-    """Round numbers for the JSON payload while preserving null indicator gaps."""
+    """Round numbers for JSON while keeping blank indicator gaps."""
     if value is None:
         return None
     return round(float(value), digits)
 
 
 def serialise_chart_row(row):
-    """Convert an internal chart row into the camelCase JSON shape for JS."""
+    """Convert one chart row into the camelCase JSON shape for JavaScript."""
     timestamp = row['timestamp']
     return {
         'timestamp': timestamp.isoformat(),
@@ -249,7 +248,7 @@ def serialise_chart_row(row):
 
 
 def price_axis(rows):
-    """Return padded y-axis bounds based on OHLC and EMA values."""
+    """Return y-axis bounds with padding based on OHLC and EMA values."""
     values = []
     for row in rows:
         values.extend([row['open'], row['high'], row['low'], row['close'], row['ema']])
@@ -268,18 +267,18 @@ def price_axis(rows):
 
 
 def chart_context(stock, start_date=None, end_date=None, refresh_live=False, limit=500, timeframe=DEFAULT_TIMEFRAME):
-    """Build the template context consumed by ``_price_chart.html``.
+    """Build the template context used by ``_price_chart.html``.
 
     Parameters:
-        stock: ``Stock`` to chart, or ``None`` for an empty-state context.
+        stock: ``Stock`` to chart, or ``None`` for an empty state.
         start_date/end_date: Optional date bounds used by historical backtests.
-        refresh_live: When true, yfinance is queried before loading saved rows.
-        limit: Maximum number of rows included in the chart payload.
+        refresh_live: When true, yfinance is checked before saved rows load.
+        limit: Maximum number of rows included in the chart JSON.
         timeframe: One of ``TIMEFRAME_OPTIONS`` or ``None`` for all bounded rows.
 
     Returns:
-        A dictionary containing display values, HTMX selector metadata, and the
-        JSON payload read by ``static/js/main.js``.
+        A dictionary with display values, HTMX data, and the JSON read by
+        ``static/js/main.js``.
     """
     warning = ''
     if refresh_live:
@@ -302,8 +301,8 @@ def chart_context(stock, start_date=None, end_date=None, refresh_live=False, lim
         timeframe_delta = dict((value, delta) for value, _label, delta in TIMEFRAME_OPTIONS)[active_timeframe]
         prices = prices.filter(timestamp__gte=latest_price.timestamp - timeframe_delta)
 
-    # Prefer imported/live rows over generated samples when both exist for a
-    # stock so charts and backtests do not mix incompatible price sources.
+    # Prefer imported/live rows over sample rows when both exist, so charts and
+    # backtests do not mix different price sources.
     if prices.exclude(source='sample').exists():
         prices = prices.exclude(source='sample')
 

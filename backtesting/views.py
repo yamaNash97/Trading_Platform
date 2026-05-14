@@ -13,7 +13,7 @@ from .services import run_backtest, trade_source_issues
 
 
 def add_chart_stock_selector(chart, stock, selector_url):
-    """Attach stock-switching metadata to a chart context."""
+    """Add stock dropdown data to a chart context."""
     chart['stock_options'] = Stock.objects.only('id', 'symbol', 'name').order_by('symbol')
     chart['selected_stock_id'] = stock.pk if stock else None
     chart['stock_selector_url'] = selector_url
@@ -27,8 +27,8 @@ def backtest_list(request):
         form = BacktestRunForm(request.POST, user=request.user)
         if form.is_valid():
             try:
-                # The service owns all simulation math and persistence; the view
-                # only translates success/failure into messages and redirects.
+                # The service owns the simulation math and saving; the view only
+                # turns success or failure into messages and redirects.
                 result = run_backtest(
                     request.user,
                     form.cleaned_data['strategy'],
@@ -42,7 +42,8 @@ def backtest_list(request):
                 return redirect('backtesting:backtest_detail', pk=result.pk)
     else:
         form = BacktestRunForm(user=request.user)
-    # select_related keeps the results table from querying strategy/stock per row.
+    # select_related keeps the results table from querying strategy/stock for
+    # each row.
     results = BacktestResult.objects.filter(user=request.user).select_related('strategy', 'stock')
     return render(request, 'backtesting/backtest_list.html', {'form': form, 'results': results})
 
@@ -62,9 +63,8 @@ def backtest_detail(request, pk):
 def strategy_price_chart(request):
     """Render the strategy preview chart used by the backtest form.
 
-    The chart can be driven by either a selected strategy or a selected stock.
-    Stock selection takes priority because the chart fragment's dropdown sends
-    a ``stock`` query parameter.
+    The chart can use either a selected strategy or a selected stock. Stock
+    choice wins because the chart dropdown sends a ``stock`` query parameter.
     """
     strategies = Strategy.objects.filter(user=request.user, is_active=True).select_related('stock')
     strategy = None
@@ -90,8 +90,8 @@ def strategy_price_chart(request):
             'stock_selector_url': reverse('backtesting:strategy_price_chart'),
         }
     else:
-        # Preview charts try a live refresh but still render saved data if the
-        # provider is unavailable.
+        # Preview charts try a live refresh but still show saved data if the API
+        # is not available.
         chart = chart_context(stock, **chart_request_options(request, default_refresh_live=True))
         add_chart_stock_selector(chart, stock, reverse('backtesting:strategy_price_chart'))
     return render(request, 'market_data/_price_chart.html', {'chart': chart})
@@ -101,8 +101,8 @@ def strategy_price_chart(request):
 def result_price_chart(request, pk):
     """Render the historical chart for a saved backtest result.
 
-    This fragment is locked to the result's stock and date range. It ignores
-    live refresh so the report remains reproducible after market data changes.
+    This chart is locked to the result's stock and date range. It ignores live
+    refresh so the report can be viewed the same way later.
     """
     result = get_object_or_404(
         BacktestResult.objects.select_related('stock'),
@@ -111,7 +111,7 @@ def result_price_chart(request, pk):
     )
     options = chart_request_options(request, default_refresh_live=False, default_timeframe=None)
 
-    # Date bounds come from the saved result, not request parameters.
+    # Date bounds come from the saved result, not request values.
     chart = chart_context(
         result.stock,
         start_date=result.start_date,

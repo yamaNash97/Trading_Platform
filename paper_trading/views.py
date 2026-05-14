@@ -15,9 +15,9 @@ from .services import execute_order, get_or_create_account
 def paper_account(request):
     """Show the paper account and handle order placement.
 
-    POST requests validate the form, attach the signed-in user, and delegate all
-    execution decisions to ``execute_order``. The view only translates the final
-    order status into success/error messages for the user.
+    POST requests check the form, attach the signed-in user, and send all
+    order checks to ``execute_order``. The view only turns the final order
+    status into success or error messages for the user.
     """
     account = get_or_create_account(request.user)
     if request.method == 'POST':
@@ -33,7 +33,7 @@ def paper_account(request):
             return redirect('paper_trading:paper_account')
     else:
         form = OrderForm()
-    # Recent orders and transactions are displayed as compact activity tables.
+    # Recent orders and transactions are shown as small activity tables.
     orders = Order.objects.filter(user=request.user).select_related('stock')[:20]
     transactions = Transaction.objects.filter(user=request.user).select_related('stock')[:20]
     return render(
@@ -45,7 +45,7 @@ def paper_account(request):
 
 @login_required
 def price_chart(request):
-    """Render the HTMX chart fragment used beside the order form."""
+    """Render the HTMX chart HTML used beside the order form."""
     stock = None
     stock_id = request.GET.get('stock')
     if stock_id and stock_id.isdigit():
@@ -56,8 +56,8 @@ def price_chart(request):
     if stock is None:
         chart = {'stock': None, 'has_data': False, 'warning': 'Add a stock before loading the paper trading chart.'}
     else:
-        # The paper-trading chart defaults to live refresh because it supports
-        # immediate order decisions, but still falls back to saved prices.
+        # The paper-trading chart tries live refresh because it helps order
+        # choices, but it still falls back to saved prices.
         chart = chart_context(stock, **chart_request_options(request, default_refresh_live=True))
         chart['stock_options'] = Stock.objects.only('id', 'symbol', 'name').order_by('symbol')
         chart['selected_stock_id'] = stock.pk

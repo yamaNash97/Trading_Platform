@@ -1,1 +1,1 @@
-# Project configuration package for settings and deployment entry points.
+# Project config package for settings and server entry points.

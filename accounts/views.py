@@ -7,8 +7,8 @@ from .forms import SignUpForm
 def signup(request):
     """Register a new user and sign them in immediately.
 
-    Authenticated visitors are logged out first so the signup page always
-    creates a fresh account rather than mutating the current session.
+    Logged-in visitors are logged out first so the signup page always creates a
+    new account instead of changing the current session.
     """
     if request.user.is_authenticated:
         logout(request)
@@ -18,8 +18,8 @@ def signup(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # Log the new user in so the normal post-login dashboard redirect
-            # happens without asking them to authenticate again.
+            # Log the new user in so they reach the dashboard without signing in
+            # again.
             login(request, user)
             return redirect('portfolio:dashboard')
     else:

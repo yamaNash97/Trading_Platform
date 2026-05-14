@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import include, path
 
-# Root URL map delegates each feature area to its app-level urls.py.
+# Root URL map sends each feature area to its app urls.py.
 urlpatterns = [
     path('admin/', admin.site.urls),
     # Custom signup plus Django's built-in login/logout/password routes.

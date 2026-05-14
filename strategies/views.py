@@ -21,7 +21,7 @@ def strategy_create(request):
         form = StrategyForm(request.POST)
         if form.is_valid():
             strategy = form.save(commit=False)
-            # The user is assigned server-side so a submitted form cannot create
+            # The user is set on the server so a submitted form cannot create
             # a strategy for another account.
             strategy.user = request.user
             strategy.save()

@@ -6,8 +6,8 @@ class Profile(models.Model):
     """Small user profile linked one-to-one with Django's auth user.
 
     The app currently stores an optional display name and creation timestamp.
-    Profiles are created automatically by ``accounts.signals.create_profile``
-    whenever a new user is saved.
+    Profiles are created by ``accounts.signals.create_profile`` when a new user
+    is saved.
     """
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

@@ -13,13 +13,13 @@ class BacktestRunForm(forms.Form):
     end_date = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
 
     def __init__(self, *args, user=None, **kwargs):
-        """Limit strategy choices to the signed-in user's active strategies."""
+        """Show only the signed-in user's active strategies."""
         super().__init__(*args, **kwargs)
         if user is not None:
             self.fields['strategy'].queryset = Strategy.objects.filter(user=user, is_active=True).select_related('stock')
 
     def clean(self):
-        """Validate that the selected date range moves forward in time."""
+        """Check that the selected date range moves forward in time."""
         cleaned = super().clean()
         start_date = cleaned.get('start_date')
         end_date = cleaned.get('end_date')

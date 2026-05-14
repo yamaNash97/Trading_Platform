@@ -8,7 +8,7 @@ class PaperAccount(models.Model):
     """Virtual cash account used for simulated trading.
 
     Each user has one paper account. ``starting_balance`` records the original
-    funding amount, while ``balance`` changes as buy and sell orders are filled.
+    cash amount, while ``balance`` changes as buy and sell orders are filled.
     """
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='paper_account', on_delete=models.CASCADE)
@@ -45,7 +45,7 @@ class Order(models.Model):
     stock = models.ForeignKey(Stock, related_name='orders', on_delete=models.CASCADE)
     order_type = models.CharField(max_length=8, choices=OrderType.choices)
     quantity = models.DecimalField(max_digits=18, decimal_places=2)
-    # price is populated at execution time from the latest PriceData close.
+    # price is set at fill time from the latest PriceData close.
     price = models.DecimalField(max_digits=14, decimal_places=4, default=0)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
     rejection_reason = models.CharField(max_length=180, blank=True)
@@ -60,10 +60,10 @@ class Order(models.Model):
 
 
 class Transaction(models.Model):
-    """Immutable ledger entry created for each filled paper order.
+    """Saved record created for each filled paper order.
 
-    Transactions preserve the executed quantity and price even if the source
-    order is later removed, which is why ``order`` is nullable with SET_NULL.
+    Transactions keep the filled quantity and price even if the source order is
+    later removed. That is why ``order`` can be null with SET_NULL.
     """
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='transactions', on_delete=models.CASCADE)

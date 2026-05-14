@@ -4,18 +4,17 @@ from .models import Stock
 
 
 class StockForm(forms.ModelForm):
-    """Create or edit the small set of Stock fields exposed to users.
+    """Create or edit the small set of Stock fields shown to users.
 
-    The form keeps instrument setup intentionally simple: users provide the
-    market identifier and optional exchange/currency metadata, while price rows
-    are created separately by sample seeding or import services.
+    Users enter the symbol, name, exchange, and currency. Price rows are added
+    later by sample seeding or import services.
     """
 
     class Meta:
         model = Stock
         fields = ('symbol', 'name', 'exchange', 'currency')
-        # Bootstrap classes are assigned here so templates can render the form
-        # with form.as_p without duplicating widget markup.
+        # Bootstrap classes are set here so templates can use form.as_p without
+        # repeating widget HTML.
         widgets = {
             'symbol': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'AAPL'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apple Inc.'}),

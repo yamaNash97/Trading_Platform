@@ -5,8 +5,8 @@ from django.contrib.auth.models import User
 class SignUpForm(UserCreationForm):
     """User registration form shown on the signup page.
 
-    It extends Django's built-in password validation flow and exposes only the
-    username/email fields from ``User`` plus the inherited password fields.
+    It uses Django's built-in password checks and shows username, email, and the
+    inherited password fields.
     """
 
     class Meta:

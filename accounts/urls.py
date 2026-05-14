@@ -4,8 +4,8 @@ from . import views
 
 app_name = 'accounts'
 
-# App-owned auth URL for registration; login/logout/password URLs come from
-# django.contrib.auth.urls in config.urls.
+# This app owns signup; login/logout/password URLs come from Django auth URLs
+# in config.urls.
 urlpatterns = [
     path('signup/', views.signup, name='signup'),
 ]

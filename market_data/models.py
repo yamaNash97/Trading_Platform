@@ -2,20 +2,18 @@ from django.db import models
 
 
 class Stock(models.Model):
-    """Tradable instrument tracked by the simulator.
+    """Tradable item tracked by the simulator.
 
-    ``symbol`` is unique because every related price row, strategy, order, and
-    holding resolves back to this canonical instrument. ``exchange`` and
-    ``currency`` are intentionally lightweight strings so equities, indices,
-    and commodities can share the same model without a separate lookup table.
+    ``symbol`` is unique because each price row, strategy, order, and holding
+    links back to one stock. ``exchange`` and ``currency`` are simple strings so
+    stocks, indices, and commodities can share this model.
     """
 
     symbol = models.CharField(max_length=12, unique=True)
     name = models.CharField(max_length=180)
     exchange = models.CharField(max_length=80, blank=True)
     currency = models.CharField(max_length=8, default='USD')
-    # Audit timestamps help identify when a market instrument was created or
-    # last touched without changing the price-history records themselves.
+    # These dates show when the stock row was created or last changed.
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -23,7 +21,7 @@ class Stock(models.Model):
         ordering = ['symbol']
 
     def save(self, *args, **kwargs):
-        """Store ticker symbols in the normalized uppercase format."""
+        """Store ticker symbols in uppercase."""
         self.symbol = self.symbol.upper().strip()
         super().save(*args, **kwargs)
 
@@ -34,9 +32,9 @@ class Stock(models.Model):
 class PriceData(models.Model):
     """One OHLCV market data point for a stock.
 
-    The simulator stores decimal prices to avoid binary floating-point drift in
-    trading calculations. ``source`` records whether a row came from sample
-    data, yfinance, Alpha Vantage equities, or Alpha Vantage commodities.
+    The simulator stores decimal prices to avoid float rounding issues in
+    trading math. ``source`` shows whether a row came from sample data,
+    yfinance, Alpha Vantage stocks, or Alpha Vantage commodities.
     """
 
     stock = models.ForeignKey(Stock, related_name='price_data', on_delete=models.CASCADE)
@@ -51,8 +49,8 @@ class PriceData(models.Model):
     class Meta:
         ordering = ['timestamp']
         constraints = [
-            # A provider can refresh the same timestamp, but it should update
-            # the existing row instead of creating duplicates.
+            # A refresh can see the same timestamp again, so update the old row
+            # instead of creating a duplicate.
             models.UniqueConstraint(fields=['stock', 'timestamp'], name='unique_stock_price_timestamp')
         ]
 

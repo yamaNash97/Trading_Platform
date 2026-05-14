@@ -2,10 +2,10 @@
 {% comment %}
 Purpose: Detailed report for a completed backtest.
 Rendered by: backtesting.views.backtest_detail.
-Main sections: report header, source-consistency warning, metric cards, locked
+Main sections: report header, price-source warning, metric cards, locked
 historical price chart, equity curve chart, and trade table.
 Required context: result, trade_source_issues.
-HTMX/JS: price chart fragment is loaded from result_price_chart; inline
+HTMX/JS: price chart HTML is loaded from result_price_chart; inline
 Chart.js code draws the equity curve from result.equity_curve JSON.
 {% endcomment %}
 {% block title %}Backtest Report{% endblock %}
@@ -15,7 +15,7 @@ Chart.js code draws the equity curve from result.equity_curve JSON.
   <a class="btn btn-outline-secondary" href="{% url 'backtesting:backtest_list' %}"><i data-lucide="arrow-left"></i> Backtests</a>
 </div>
 {% if trade_source_issues %}
-{# Warn only when saved trades used mixed sample/live sources, which can invalidate P/L. #}
+{# Warn only when saved trades used mixed sample/live sources, which can make P/L wrong. #}
 <div class="alert alert-danger" role="alert">
   This saved backtest mixed sample prices with live market prices, so its trade prices and P/L are invalid.
   Re-run the backtest to calculate it with one consistent price source.
@@ -25,14 +25,14 @@ Chart.js code draws the equity curve from result.equity_curve JSON.
 <div class="row g-3 mb-3">
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Initial</div><div class="fs-3 fw-bold">${{ result.initial_balance|floatformat:2 }}</div></div></div>
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Final</div><div class="fs-3 fw-bold">${{ result.final_balance|floatformat:2 }}</div></div></div>
-  {# Negative returns are red; non-negative returns are green for scanability. #}
+  {# Negative returns are red; zero and positive returns are green for scanning. #}
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Return</div><div class="fs-3 fw-bold {% if result.total_return < 0 %}text-danger{% else %}text-success{% endif %}">{{ result.total_return }}%</div></div></div>
   <div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary small text-uppercase fw-semibold">Max drawdown</div><div class="fs-3 fw-bold">{{ result.max_drawdown }}%</div></div></div>
 </div>
 <div
   id="backtest-result-price-chart"
   class="mb-3"
-  {# This endpoint ignores live refresh and stock switching so the report stays historically faithful. #}
+  {# This URL ignores live refresh and stock switching so the report stays tied to saved history. #}
   hx-get="{% url 'backtesting:result_price_chart' result.pk %}"
   hx-trigger="load"
   hx-swap="innerHTML"
@@ -51,7 +51,7 @@ Chart.js code draws the equity curve from result.equity_curve JSON.
     <div class="equity-chart-shell">
       <canvas id="equity-curve-chart" class="equity-chart-canvas" role="img" aria-label="Backtest equity curve"></canvas>
     </div>
-    {# json_script safely passes server-generated equity points to the inline Chart.js setup. #}
+    {# json_script safely passes server-made equity points to the inline Chart.js setup. #}
     {{ result.equity_curve|json_script:"equity-curve-data" }}
   {% else %}
     <div class="text-secondary">No equity data.</div>
@@ -70,7 +70,7 @@ Chart.js code draws the equity curve from result.equity_curve JSON.
             <td>{{ trade.quantity|floatformat:4 }}</td>
             <td>${{ trade.entry_price|floatformat:2 }}</td>
             <td>${{ trade.exit_price|floatformat:2 }}</td>
-            {# Trade P/L follows the app-wide red/green gain/loss convention. #}
+            {# Trade P/L follows the app-wide red/green gain/loss rule. #}
             <td class="{% if trade.pnl < 0 %}text-danger{% else %}text-success{% endif %}">${{ trade.pnl|floatformat:2 }}</td>
             <td>{{ trade.exit_reason }}</td>
           </tr>
@@ -86,7 +86,7 @@ Chart.js code draws the equity curve from result.equity_curve JSON.
 {{ block.super }}
 <script>
   (function () {
-    // Build the equity curve only when both the JSON payload and canvas exist.
+    // Build the equity curve only when both the JSON data and canvas exist.
     const script = document.getElementById('equity-curve-data');
     const canvas = document.getElementById('equity-curve-chart');
     if (!script || !canvas || typeof Chart === 'undefined') {

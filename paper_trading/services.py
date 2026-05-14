@@ -1,8 +1,8 @@
-"""Paper-trading account and order execution services.
+"""Paper-trading account and order services.
 
 Views create unsaved ``Order`` instances from forms, then pass them here for
-validation and execution. This module is the single place that mutates virtual
-cash balances, portfolio holdings, order statuses, and transaction ledger rows.
+checks and filling. This module is the one place that changes virtual cash,
+holdings, order statuses, and transaction rows.
 """
 
 from decimal import Decimal
@@ -23,16 +23,14 @@ def get_or_create_account(user):
 
 @transaction.atomic
 def execute_order(order):
-    """Validate and execute a paper-trading order.
+    """Check and fill a paper-trading order.
 
     The order is filled at the latest saved close price for its stock. Buy
-    orders require enough virtual cash; sell orders require enough shares in
-    ``PortfolioHolding``. Rejections are saved with ``Order.Status.REJECTED`` and
-    a human-readable ``rejection_reason``.
+    orders need enough virtual cash; sell orders need enough shares in
+    ``PortfolioHolding``. Rejected orders are saved with a clear reason.
 
     Returns:
-        The saved ``Order`` with final status, price, and filled timestamp when
-        applicable.
+        The saved ``Order`` with final status, price, and filled time when used.
     """
     account = get_or_create_account(order.user)
     price = latest_price(order.stock)
@@ -44,8 +42,8 @@ def execute_order(order):
 
     order.price = price
     cost = order.quantity * price
-    # Lock the holding row during execution so simultaneous requests cannot
-    # oversell or double-spend the same paper position.
+    # Lock the holding row while filling the order so two requests cannot sell
+    # or spend the same paper position at the same time.
     holding, _ = PortfolioHolding.objects.select_for_update().get_or_create(user=order.user, stock=order.stock)
 
     if order.order_type == Order.OrderType.BUY:
@@ -54,8 +52,8 @@ def execute_order(order):
             order.rejection_reason = 'Insufficient virtual cash.'
             order.save()
             return order
-        # Weighted average cost keeps unrealized P/L accurate after multiple
-        # buys at different prices.
+        # Weighted average cost keeps unrealized P/L correct after buys at
+        # different prices.
         previous_cost = holding.quantity * holding.average_buy_price
         holding.quantity += order.quantity
         holding.average_buy_price = (previous_cost + cost) / holding.quantity
@@ -68,7 +66,7 @@ def execute_order(order):
             return order
         holding.quantity -= order.quantity
         account.balance += cost
-        # Reset the basis when the user fully exits the position.
+        # Reset the cost basis when the user fully exits the position.
         if holding.quantity == 0:
             holding.average_buy_price = Decimal('0')
 
@@ -77,7 +75,7 @@ def execute_order(order):
     order.status = Order.Status.FILLED
     order.filled_at = timezone.now()
     order.save()
-    # A transaction records the immutable fill details used by dashboards.
+    # A transaction records the fill details used by dashboards.
     Transaction.objects.create(
         user=order.user,
         order=order,

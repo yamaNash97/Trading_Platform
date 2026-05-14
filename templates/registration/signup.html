@@ -13,7 +13,7 @@ HTMX/JS: no HTMX; form posts directly to the signup view.
   <div class="col-md-6 col-lg-5">
     <div class="card border-0 shadow-sm p-3">
       <h1 class="h4 mb-3">Create account</h1>
-      {# SignUpForm applies Bootstrap classes in __init__, so form.as_p keeps this template compact. #}
+      {# SignUpForm sets Bootstrap classes in __init__, so form.as_p keeps this template short. #}
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}

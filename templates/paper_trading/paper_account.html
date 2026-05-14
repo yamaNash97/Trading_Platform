@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% comment %}
-Purpose: Paper-trading workspace for placing simulated orders and reviewing
+Purpose: Paper-trading page for placing test orders and reviewing
 activity.
 Rendered by: paper_trading.views.paper_account.
 Main sections: account balance header, OrderForm card, HTMX chart shell,
 recent orders table, and transactions table.
 Required context: account, form, orders, transactions.
-HTMX/JS: chart shell loads paper_trading:price_chart on page load and whenever
-the stock select changes; main.js initializes the swapped chart fragment.
+HTMX/JS: chart area loads paper_trading:price_chart on page load and whenever
+the stock select changes; main.js starts the swapped chart HTML.
 {% endcomment %}
 {% block title %}Paper Trading{% endblock %}
 {% block content %}
@@ -21,7 +21,7 @@ the stock select changes; main.js initializes the swapped chart fragment.
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm p-3">
       <h2 class="h5">Place order</h2>
-      {# OrderForm exposes only stock, side, and quantity; execution fields are server-owned. #}
+      {# OrderForm shows only stock, side, and quantity; fill fields are set by the server. #}
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
@@ -30,7 +30,7 @@ the stock select changes; main.js initializes the swapped chart fragment.
     </div>
   </div>
   <div class="col-lg-8">
-    {# HTMX keeps the chart synchronized with #id_stock without submitting the order form. #}
+    {# HTMX keeps the chart in sync with #id_stock without submitting the order form. #}
     <div id="paper-price-chart" hx-get="{% url 'paper_trading:price_chart' %}" hx-trigger="load, change from:#id_stock"
       hx-include="#id_stock" hx-swap="innerHTML">
       <div class="card bg-dark border-secondary shadow-sm p-5 text-center">
@@ -68,7 +68,7 @@ the stock select changes; main.js initializes the swapped chart fragment.
               <td>{{ order.get_status_display }}</td>
             </tr>
             {% empty %}
-            {# Empty state appears before the user submits any orders. #}
+            {# Empty state appears before the user submits orders. #}
             <tr>
               <td colspan="6" class="text-secondary">No orders yet.</td>
             </tr>
@@ -102,7 +102,7 @@ the stock select changes; main.js initializes the swapped chart fragment.
               <td>${{ tx.price|floatformat:2 }}</td>
             </tr>
             {% empty %}
-            {# Transactions are only created for filled orders, not rejected ones. #}
+            {# Transactions are created for filled orders only, not rejected ones. #}
             <tr>
               <td colspan="5" class="text-secondary">No filled transactions yet.</td>
             </tr>

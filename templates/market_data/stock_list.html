@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% comment %}
-Purpose: Market data index for creating stocks and browsing tracked symbols.
+Purpose: Market data page for adding stocks and browsing saved symbols.
 Rendered by: market_data.views.stock_list.
-Main sections: header actions, StockForm card, and stock table with price-row
+Main sections: header actions, StockForm card, and stock table with price row
 counts.
 Required context: form, stocks.
-HTMX/JS: no HTMX; Lucide icons are initialized by base.html/main.js.
+HTMX/JS: no HTMX; base.html/main.js starts Lucide icons.
 {% endcomment %}
 {% block title %}Market Data{% endblock %}
 {% block content %}
@@ -22,7 +22,7 @@ HTMX/JS: no HTMX; Lucide icons are initialized by base.html/main.js.
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm p-3">
       <h2 class="h5">Add stock</h2>
-      {# StockForm widgets already include Bootstrap classes, so form.as_p is safe here. #}
+      {# StockForm widgets already include Bootstrap classes, so form.as_p works here. #}
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
@@ -54,7 +54,7 @@ HTMX/JS: no HTMX; Lucide icons are initialized by base.html/main.js.
                   href="{% url 'market_data:stock_detail' stock.pk %}"><i data-lucide="line-chart"></i> Open</a></td>
             </tr>
             {% empty %}
-            {# Empty state covers a brand-new database before any stock rows are available. #}
+            {# Empty state covers a new database before any stock rows exist. #}
             <tr>
               <td colspan="5" class="text-secondary">Add a stock to start testing strategies.</td>
             </tr>

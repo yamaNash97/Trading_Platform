@@ -21,20 +21,19 @@ def landing(request):
 
 @login_required
 def dashboard(request):
-    """Render the authenticated portfolio dashboard.
+    """Render the logged-in portfolio dashboard.
 
-    The view gathers the current paper account, open holdings, recent
-    transactions, and recent backtests for the signed-in user. Totals are
-    calculated in Python because they combine account cash with per-holding
-    model methods that look up the latest saved market price.
+    The view gets the current paper account, open holdings, recent transactions,
+    and recent backtests for the signed-in user. Totals are calculated in Python
+    because they combine account cash with holding methods that look up the
+    latest saved market price.
     """
     account = get_or_create_account(request.user)
-    # select_related keeps stock lookups from turning each table row into an
-    # extra query when the template renders symbols and prices.
+    # select_related keeps each table row from doing an extra stock query.
     holdings = list(PortfolioHolding.objects.filter(user=request.user).select_related('stock'))
     portfolio_value = sum((holding.market_value() for holding in holdings), Decimal('0'))
     unrealized_pnl = sum((holding.unrealized_pnl() for holding in holdings), Decimal('0'))
-    # The dashboard only needs compact recent activity summaries.
+    # The dashboard only needs small recent activity lists.
     recent_transactions = Transaction.objects.filter(user=request.user).select_related('stock')[:8]
     backtests = BacktestResult.objects.filter(user=request.user).select_related('strategy', 'stock')[:5]
     total_value = account.balance + portfolio_value

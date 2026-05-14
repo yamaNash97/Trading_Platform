@@ -1,9 +1,8 @@
-"""Market data import and sample-data services.
+"""Market data import and sample price services.
 
-This module owns all writes to ``PriceData`` that come from external market
-providers or from deterministic local sample generation. Views call these
-functions and handle user messages; the services raise exceptions when provider
-data is missing or malformed so callers can decide how to report failures.
+This module writes ``PriceData`` rows from market data APIs or from local sample
+data. Views call these functions and show user messages. The functions raise
+errors when API data is missing or invalid.
 """
 
 import math
@@ -46,26 +45,26 @@ ALPHA_VANTAGE_COMMODITY_TTL = 6 * 60 * 60
 
 
 def to_decimal(value):
-    """Convert provider numeric values to the app's four-decimal price scale."""
+    """Convert API numbers to the app's four-decimal price scale."""
     return Decimal(str(value)).quantize(Decimal('0.0001'))
 
 
 def alpha_vantage_daily_cache_key(symbol, outputsize):
-    """Build the cache key for Alpha Vantage daily equity responses."""
+    """Build the cache key for Alpha Vantage daily stock data."""
     return f'av_daily:{symbol.upper()}:{outputsize}'
 
 
 def alpha_vantage_commodity_cache_key(definition):
-    """Build the cache key for an Alpha Vantage commodity definition."""
+    """Build the cache key for Alpha Vantage commodity data."""
     symbol = definition.get('symbol') or definition['function']
     return f'av_commodity:{definition["function"]}:{symbol.upper()}'
 
 
 def commodity_row_value(row):
-    """Return the first usable price value from a commodity provider row.
+    """Return the first usable price from a commodity API row.
 
-    Alpha Vantage commodity endpoints vary their value key by function, so the
-    importer checks the known key names and ignores placeholder values.
+    Alpha Vantage uses different field names for different commodities, so this
+    helper checks the known names and skips blank values.
     """
     for key in ('value', 'price', 'close', '1. open', '4. close'):
         value = row.get(key)
@@ -81,7 +80,7 @@ def latest_price(stock):
 
 
 def safe_cache_get(key):
-    """Read from Django's cache while tolerating unavailable cache backends."""
+    """Read from Django's cache and ignore cache errors."""
     try:
         return cache.get(key)
     except Exception:
@@ -89,7 +88,7 @@ def safe_cache_get(key):
 
 
 def safe_cache_set(key, value, timeout):
-    """Write to Django's cache without letting cache failures block imports."""
+    """Write to Django's cache and ignore cache errors."""
     try:
         cache.set(key, value, timeout)
     except Exception:
@@ -97,17 +96,16 @@ def safe_cache_set(key, value, timeout):
 
 
 class AlphaVantageClient:
-    """Small wrapper around Alpha Vantage HTTP endpoints used by the app.
+    """Small wrapper around the Alpha Vantage API used by the app.
 
-    The client performs direct HTTPS requests with ``requests`` and caches
-    successful JSON payloads to protect both the external API quota and page
-    response times during repeated refreshes.
+    The client uses ``requests`` and caches good JSON results. That helps avoid
+    extra API calls and keeps repeated refreshes faster.
     """
 
     base_url = 'https://www.alphavantage.co/query'
 
     def __init__(self, api_key=None):
-        """Use the supplied API key or fall back to settings."""
+        """Use the given API key or the key from settings."""
         self.api_key = api_key or settings.ALPHA_VANTAGE_API_KEY
 
     def daily(self, symbol, outputsize='compact'):
@@ -115,8 +113,8 @@ class AlphaVantageClient:
 
         Raises:
             ValueError: if the API key is missing or Alpha Vantage responds
-                without a daily time-series payload.
-            requests.HTTPError: if the HTTP response is unsuccessful.
+                without daily prices.
+            requests.HTTPError: if the HTTP request fails.
         """
         if not self.api_key:
             raise ValueError('ALPHA_VANTAGE_API_KEY is not configured.')
@@ -145,11 +143,11 @@ class AlphaVantageClient:
         return series
 
     def commodity_history(self, definition):
-        """Return Alpha Vantage commodity history rows for a configured market.
+        """Return Alpha Vantage commodity history rows.
 
-        ``definition`` comes from ``COMMODITY_DEFINITIONS`` and controls the API
+        ``definition`` comes from ``COMMODITY_DEFINITIONS`` and sets the API
         function, optional symbol, and interval. The method raises ``ValueError``
-        when the provider returns only an informational or error payload.
+        when Alpha Vantage returns only an info or error message.
         """
         if not self.api_key:
             raise ValueError('ALPHA_VANTAGE_API_KEY is not configured.')
@@ -184,8 +182,8 @@ def import_alpha_vantage_daily(stock, outputsize='compact'):
         outputsize: Alpha Vantage output size, usually ``compact`` or ``full``.
 
     Returns:
-        The number of newly created ``PriceData`` rows. Existing timestamps are
-        updated in place so refreshes stay idempotent.
+        The number of new ``PriceData`` rows. Existing timestamps are updated,
+        so running the import again is safe.
     """
     series = AlphaVantageClient().daily(stock.symbol, outputsize=outputsize)
     imported = 0
@@ -215,11 +213,11 @@ def import_alpha_vantage_commodity(symbol):
         symbol: One of the keys in ``COMMODITY_DEFINITIONS``.
 
     Returns:
-        ``(stock, imported_count)`` where ``stock`` is the commodity-backed
-        ``Stock`` row and ``imported_count`` is the number of new price rows.
+        ``(stock, imported_count)`` where ``stock`` is the commodity ``Stock``
+        row and ``imported_count`` is the number of new price rows.
 
     Raises:
-        ValueError: if the symbol is not configured or the provider returns no
+        ValueError: if the symbol is not supported or the API returns no
         usable data.
     """
     key = symbol.upper().strip()
@@ -239,8 +237,8 @@ def import_alpha_vantage_commodity(symbol):
     imported = 0
 
     for row in data:
-        # Commodity rows usually carry one price value, so OHLC are all set to
-        # that value to keep charting and backtesting code using the same model.
+        # Commodity rows usually have one price value, so OHLC all use that
+        # value and the rest of the app can use the same model.
         value = commodity_row_value(row)
         if value is None:
             continue
@@ -264,7 +262,7 @@ def import_alpha_vantage_commodity(symbol):
 
 
 def import_default_commodities():
-    """Import the default commodity set shown from the market-data screen."""
+    """Import the default commodities shown on the market-data screen."""
     results = []
     for symbol in ('WTI', 'GOLD', 'NATURAL_GAS'):
         results.append(import_alpha_vantage_commodity(symbol))
@@ -272,15 +270,15 @@ def import_default_commodities():
 
 
 def seed_sample_prices(stock, days=260):
-    """Create deterministic OHLCV data so the simulator works without API access.
+    """Create repeatable OHLCV data so the app works without API access.
 
     Parameters:
-        stock: ``Stock`` receiving generated business-day price rows.
+        stock: ``Stock`` that receives sample weekday price rows.
         days: Number of trading days to create.
 
     Returns:
-        Number of new rows inserted. Re-running for the same stock and dates is
-        safe because rows are matched by the stock/timestamp unique constraint.
+        Number of new rows added. Running it again for the same stock and dates
+        is safe because each stock/timestamp pair is unique.
     """
     rng = random.Random(stock.symbol)
     start = timezone.now().date() - timedelta(days=days + 40)
@@ -292,8 +290,8 @@ def seed_sample_prices(stock, days=260):
         current_day = start + timedelta(days=offset)
         if current_day.weekday() >= 5:
             continue
-        # The wave/drift/noise blend produces varied but repeatable prices for
-        # demos, tests, and local development without external API access.
+        # This small mix of wave, drift, and noise makes prices varied but
+        # repeatable for demos, tests, and local work.
         wave = Decimal(str(math.sin(day_index / 13) * 1.2)).quantize(Decimal('0.0001'))
         drift = Decimal('0.0350')
         noise = Decimal(str(rng.uniform(-1.4, 1.4))).quantize(Decimal('0.0001'))

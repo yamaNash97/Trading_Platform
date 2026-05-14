@@ -4,7 +4,7 @@ from .models import BacktestResult, BacktestTrade
 
 
 class BacktestTradeInline(admin.TabularInline):
-    """Inline trade rows shown on a saved backtest result."""
+    """Trade rows shown inside a saved backtest result."""
 
     model = BacktestTrade
     extra = 0
@@ -12,7 +12,7 @@ class BacktestTradeInline(admin.TabularInline):
 
 @admin.register(BacktestResult)
 class BacktestResultAdmin(admin.ModelAdmin):
-    """Admin list configuration for saved backtest results."""
+    """Admin list setup for saved backtest results."""
 
     list_display = ('strategy', 'stock', 'user', 'total_return', 'max_drawdown', 'number_of_trades', 'created_at')
     list_filter = ('stock', 'created_at')

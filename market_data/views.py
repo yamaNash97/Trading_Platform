@@ -10,12 +10,12 @@ from .services import import_alpha_vantage_daily, import_default_commodities, se
 
 
 def chart_stock_options():
-    """Return lightweight stock rows for chart selector dropdowns."""
+    """Return small stock rows for chart dropdowns."""
     return Stock.objects.only('id', 'symbol', 'name').order_by('symbol')
 
 
 def chart_with_stock_options(stock, request):
-    """Build a chart context and attach stock-selector metadata."""
+    """Build a chart context and add stock dropdown data."""
     chart = chart_context(stock, **chart_request_options(request))
     chart['stock_options'] = chart_stock_options()
     chart['selected_stock_id'] = stock.pk
@@ -29,7 +29,7 @@ def stock_list(request):
 
     POST requests create a ``Stock`` from ``StockForm`` and immediately seed
     sample OHLCV rows so charts, strategies, and paper trading can be used
-    without waiting for an external provider import.
+    without waiting for an API import.
     """
     if request.method == 'POST':
         form = StockForm(request.POST)
@@ -40,7 +40,7 @@ def stock_list(request):
             return redirect('market_data:stock_detail', pk=stock.pk)
     else:
         form = StockForm()
-    # Prefetch price_data because the table displays a row count for each stock.
+    # Prefetch price_data because the table shows a row count for each stock.
     stocks = Stock.objects.prefetch_related('price_data')
     return render(request, 'market_data/stock_list.html', {'form': form, 'stocks': stocks})
 
@@ -60,21 +60,20 @@ def import_commodities(request):
 
 @login_required
 def stock_detail(request, pk):
-    """Show one stock, recent raw prices, and the HTMX-loaded chart shell."""
+    """Show one stock, recent prices, and the HTMX-loaded chart area."""
     stock = get_object_or_404(Stock, pk=pk)
-    # The table only previews recent rows; the reusable chart endpoint performs
-    # its own timeframe filtering and JSON payload construction.
+    # The table shows recent rows only; the chart view does its own filtering
+    # and JSON building.
     prices = stock.price_data.order_by('-timestamp')[:90]
     return render(request, 'market_data/stock_detail.html', {'stock': stock, 'prices': prices})
 
 
 @login_required
 def stock_price_chart(request, pk):
-    """Render a chart fragment for a stock-specific URL.
+    """Render chart HTML for a stock-specific URL.
 
-    This endpoint is useful for direct chart embeds that already know a stock
-    primary key. The stock list/detail pages use ``stock_chart`` because it can
-    also respond to dropdown changes via a query parameter.
+    This view is useful when the URL already has a stock id. The stock pages use
+    ``stock_chart`` because it can also answer dropdown changes.
     """
     stock = get_object_or_404(Stock, pk=pk)
     chart = chart_with_stock_options(stock, request)
@@ -83,11 +82,10 @@ def stock_price_chart(request, pk):
 
 @login_required
 def stock_chart(request):
-    """Render the reusable market chart fragment for HTMX requests.
+    """Render reusable market chart HTML for HTMX requests.
 
     The selected stock comes from ``?stock=``. When no valid stock is supplied,
-    the view falls back to the first known stock so dashboard widgets can load a
-    useful default.
+    the view uses the first known stock as a useful default.
     """
     stock = None
     stock_id = request.GET.get('stock')
@@ -110,7 +108,7 @@ def stock_chart(request):
 
 @login_required
 def seed_prices(request, pk):
-    """Create deterministic sample price rows for a stock."""
+    """Create repeatable sample price rows for a stock."""
     stock = get_object_or_404(Stock, pk=pk)
     created = seed_sample_prices(stock)
     messages.success(request, f'{created} sample price rows were created for {stock.symbol}.')

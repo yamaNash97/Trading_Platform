@@ -9,6 +9,6 @@ from .models import Profile
 def create_profile(sender, instance, created, **kwargs):
     """Create a Profile row for each newly created auth user."""
     if created:
-        # get_or_create keeps the signal idempotent if another setup path has
-        # already created the related profile.
+        # get_or_create keeps this safe if another path already made the
+        # profile.
         Profile.objects.get_or_create(user=instance)

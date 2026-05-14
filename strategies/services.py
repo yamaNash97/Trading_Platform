@@ -1,15 +1,15 @@
-"""Strategy indicator calculations and signal generation.
+"""Strategy indicator math and signal generation.
 
 Backtesting passes historical ``PriceData`` rows and a ``Strategy`` into this
-module. The functions return aligned indicator arrays and signal dictionaries
-without mutating the database.
+module. The functions return indicator lists and signal dictionaries without
+changing the database.
 """
 
 from decimal import Decimal
 
 
 def sma(values, window):
-    """Return a simple moving average series aligned to ``values``."""
+    """Return a simple moving average list that lines up with ``values``."""
     output = []
     running = Decimal('0')
     for index, value in enumerate(values):
@@ -21,10 +21,10 @@ def sma(values, window):
 
 
 def rsi(values, period):
-    """Return a Relative Strength Index series aligned to ``values``.
+    """Return a Relative Strength Index list that lines up with ``values``.
 
-    Values before enough history exists are returned as ``None`` so callers can
-    keep indicator indexes aligned with price indexes.
+    Values before there is enough price history are ``None`` so callers can keep
+    price and indicator indexes lined up.
     """
     output = [None] * len(values)
     if len(values) <= period:
@@ -55,12 +55,12 @@ def generate_signals(strategy, prices):
     """Generate buy/sell/hold signals for a strategy over price rows.
 
     Parameters:
-        strategy: ``Strategy`` containing the strategy type and indicator knobs.
-        prices: ordered iterable of ``PriceData`` rows.
+        strategy: ``Strategy`` with the strategy type and indicator settings.
+        prices: ordered list of ``PriceData`` rows.
 
     Returns:
-        A list of dictionaries containing the price row, signal, short/long
-        moving averages, and RSI value for each input row.
+        A list of dictionaries with the price row, signal, short/long moving
+        averages, and RSI value for each input row.
     """
     closes = [point.close_price for point in prices]
     short_ma = sma(closes, strategy.short_window)
@@ -91,8 +91,8 @@ def generate_signals(strategy, prices):
         rsi_buy = rsi_values[index] is not None and rsi_values[index] <= Decimal(strategy.rsi_buy_threshold)
         rsi_sell = rsi_values[index] is not None and rsi_values[index] >= Decimal(strategy.rsi_sell_threshold)
 
-        # Each strategy type reuses the same indicator arrays but applies a
-        # different decision rule.
+        # Each strategy type uses the same indicator lists but a different
+        # decision rule.
         if strategy.strategy_type == strategy.StrategyType.MOVING_AVERAGE:
             signal = 'buy' if crossed_up else 'sell' if crossed_down else 'hold'
         elif strategy.strategy_type == strategy.StrategyType.RSI:

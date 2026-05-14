@@ -5,11 +5,11 @@ from market_data.models import Stock
 
 
 class Strategy(models.Model):
-    """User-owned trading strategy configuration.
+    """Trading strategy settings owned by one user.
 
-    A strategy stores the instrument, high-level strategy type, risk settings,
-    and parameter JSON used by the signal engine. Backtests read these values to
-    generate buy/sell/hold signals over historical ``PriceData`` rows.
+    A strategy stores the stock, high-level strategy type, risk settings,
+    and JSON settings used by the signal engine. Backtests read these values to
+    make buy/sell/hold signals over old ``PriceData`` rows.
     """
 
     class StrategyType(models.TextChoices):
@@ -23,10 +23,10 @@ class Strategy(models.Model):
     stock = models.ForeignKey(Stock, related_name='strategies', on_delete=models.CASCADE)
     name = models.CharField(max_length=120)
     strategy_type = models.CharField(max_length=32, choices=StrategyType.choices)
-    # JSON keeps strategy-specific knobs flexible without adding a migration for
-    # every indicator parameter the form exposes.
+    # JSON keeps strategy-specific settings flexible without a migration for
+    # every indicator field in the form.
     parameters = models.JSONField(default=dict, blank=True)
-    # Decimal fields keep simulated money and percentages stable in backtests.
+    # Decimal fields keep money and percentages stable in backtests.
     initial_balance = models.DecimalField(max_digits=14, decimal_places=2, default=10000)
     position_size_percent = models.DecimalField(max_digits=5, decimal_places=2, default=25)
     stop_loss_percent = models.DecimalField(max_digits=5, decimal_places=2, default=8)
@@ -43,17 +43,17 @@ class Strategy(models.Model):
 
     @property
     def short_window(self):
-        """Return the short moving-average window with a safe default."""
+        """Return the short moving-average window with a default."""
         return int(self.parameters.get('short_window', 20))
 
     @property
     def long_window(self):
-        """Return the long moving-average window with a safe default."""
+        """Return the long moving-average window with a default."""
         return int(self.parameters.get('long_window', 50))
 
     @property
     def rsi_period(self):
-        """Return the RSI lookback period with a safe default."""
+        """Return the RSI lookback period with a default."""
         return int(self.parameters.get('rsi_period', 14))
 
     @property
