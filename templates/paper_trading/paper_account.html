@@ -4,8 +4,8 @@ Purpose: Paper-trading page for placing test orders and reviewing
 activity.
 Rendered by: paper_trading.views.paper_account.
 Main sections: account balance header, OrderForm card, HTMX chart shell,
-recent orders table, and transactions table.
-Required context: account, form, orders, transactions.
+open trades table, recent orders table, and transactions table.
+Required context: account, form, open_trades, orders, transactions.
 HTMX/JS: chart area loads paper_trading:price_chart on page load and whenever
 the stock select changes; main.js starts the swapped chart HTML.
 {% endcomment %}
@@ -41,10 +41,16 @@ the stock select changes; main.js starts the swapped chart HTML.
   </div>
 </div>
 
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    {% include "paper_trading/_open_trades.html" %}
+  </div>
+</div>
+
 <div class="row g-3">
   <div class="col-lg-8">
     <div class="card border-0 shadow-sm p-3">
-      <h2 class="h5">Orders</h2>
+      <h2 class="h5">Order history</h2>
       <div class="table-responsive">
         <table class="table align-middle">
           <thead>
@@ -63,9 +69,17 @@ the stock select changes; main.js starts the swapped chart HTML.
               <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
               <td>{{ order.get_order_type_display }}</td>
               <td>{{ order.stock.symbol }}</td>
-              <td>{{ order.quantity|floatformat:2 }}</td>
+              <td>{{ order.quantity|floatformat:4 }}</td>
               <td>${{ order.price|floatformat:2 }}</td>
-              <td>{{ order.get_status_display }}</td>
+              <td>
+                {% if order.status == "filled" %}
+                  <span class="badge text-bg-success">Accepted</span>
+                {% elif order.status == "rejected" %}
+                  <span class="badge text-bg-danger">Rejected</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">{{ order.get_status_display }}</span>
+                {% endif %}
+              </td>
             </tr>
             {% empty %}
             {# Empty state appears before the user submits orders. #}

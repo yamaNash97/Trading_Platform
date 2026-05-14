@@ -44,7 +44,7 @@ class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='orders', on_delete=models.CASCADE)
     stock = models.ForeignKey(Stock, related_name='orders', on_delete=models.CASCADE)
     order_type = models.CharField(max_length=8, choices=OrderType.choices)
-    quantity = models.DecimalField(max_digits=18, decimal_places=2)
+    quantity = models.DecimalField(max_digits=18, decimal_places=6)
     # price is set at fill time from the latest PriceData close.
     price = models.DecimalField(max_digits=14, decimal_places=4, default=0)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
@@ -69,7 +69,7 @@ class Transaction(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='transactions', on_delete=models.CASCADE)
     order = models.ForeignKey(Order, related_name='transactions', null=True, blank=True, on_delete=models.SET_NULL)
     stock = models.ForeignKey(Stock, related_name='transactions', on_delete=models.CASCADE)
-    quantity = models.DecimalField(max_digits=18, decimal_places=2)
+    quantity = models.DecimalField(max_digits=18, decimal_places=6)
     price = models.DecimalField(max_digits=14, decimal_places=4)
     transaction_type = models.CharField(max_length=8, choices=Order.OrderType.choices)
     created_at = models.DateTimeField(auto_now_add=True)

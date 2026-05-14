@@ -21,6 +21,51 @@ def get_or_create_account(user):
     return PaperAccount.objects.get_or_create(user=user)[0]
 
 
+def open_trade_rows(user, refresh_live=False):
+    """Return valued open positions for the paper-trading screen.
+
+    Filled buy orders are represented by positive ``PortfolioHolding`` rows.
+    This helper turns those rows into display-ready trade values using the
+    latest saved price, optionally trying a yfinance refresh first.
+    """
+    holdings = PortfolioHolding.objects.filter(user=user, quantity__gt=0).select_related('stock')
+    rows = []
+    warnings = []
+
+    for holding in holdings:
+        if refresh_live:
+            try:
+                from market_data.charting import refresh_yfinance_prices
+
+                refresh_yfinance_prices(holding.stock)
+            except Exception as exc:
+                warnings.append(f'{holding.stock.symbol}: {exc}')
+
+        current_price = latest_price(holding.stock)
+        cost_basis = holding.quantity * holding.average_buy_price
+        market_value = holding.quantity * current_price
+        unrealized_pnl = market_value - cost_basis
+        unrealized_pnl_percent = Decimal('0')
+        if cost_basis:
+            unrealized_pnl_percent = (unrealized_pnl / cost_basis) * Decimal('100')
+
+        rows.append(
+            {
+                'holding': holding,
+                'stock': holding.stock,
+                'quantity': holding.quantity,
+                'entry_price': holding.average_buy_price,
+                'current_price': current_price,
+                'cost_basis': cost_basis,
+                'market_value': market_value,
+                'unrealized_pnl': unrealized_pnl,
+                'unrealized_pnl_percent': unrealized_pnl_percent,
+            }
+        )
+
+    return rows, warnings
+
+
 @transaction.atomic
 def execute_order(order):
     """Check and fill a paper-trading order.
@@ -85,3 +130,24 @@ def execute_order(order):
         transaction_type=order.order_type,
     )
     return order
+
+
+@transaction.atomic
+def exit_position(user, stock):
+    """Sell the user's full open position and return realized P/L.
+
+    The sale uses the same order execution path as manual sell orders, so cash,
+    holdings, transactions, and order history are updated in one place.
+    """
+    holding = PortfolioHolding.objects.select_for_update().filter(user=user, stock=stock, quantity__gt=0).first()
+    if holding is None:
+        raise ValueError(f'No open {stock.symbol} position to exit.')
+
+    entry_price = holding.average_buy_price
+    quantity = holding.quantity
+    order = Order(user=user, stock=stock, order_type=Order.OrderType.SELL, quantity=quantity)
+    order = execute_order(order)
+    realized_pnl = None
+    if order.status == Order.Status.FILLED:
+        realized_pnl = (order.price - entry_price) * quantity
+    return order, realized_pnl

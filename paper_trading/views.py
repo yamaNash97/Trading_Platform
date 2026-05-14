@@ -1,14 +1,15 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from market_data.charting import chart_context, chart_request_options
 from market_data.models import Stock
 
 from .forms import OrderForm
 from .models import Order, Transaction
-from .services import execute_order, get_or_create_account
+from .services import execute_order, exit_position, get_or_create_account, open_trade_rows
 
 
 @login_required
@@ -33,14 +34,50 @@ def paper_account(request):
             return redirect('paper_trading:paper_account')
     else:
         form = OrderForm()
+    open_trades, refresh_warnings = open_trade_rows(request.user)
     # Recent orders and transactions are shown as small activity tables.
     orders = Order.objects.filter(user=request.user).select_related('stock')[:20]
     transactions = Transaction.objects.filter(user=request.user).select_related('stock')[:20]
     return render(
         request,
         'paper_trading/paper_account.html',
-        {'account': account, 'form': form, 'orders': orders, 'transactions': transactions},
+        {
+            'account': account,
+            'form': form,
+            'open_trades': open_trades,
+            'refresh_warnings': refresh_warnings,
+            'orders': orders,
+            'transactions': transactions,
+        },
     )
+
+
+@login_required
+def open_trades(request):
+    """Render the open-trade table, optionally refreshing live prices first."""
+    rows, warnings = open_trade_rows(request.user, refresh_live=request.GET.get('refresh') == '1')
+    return render(request, 'paper_trading/_open_trades.html', {'open_trades': rows, 'refresh_warnings': warnings})
+
+
+@login_required
+@require_POST
+def exit_trade(request, stock_id):
+    """Close the user's full open position for one stock."""
+    stock = get_object_or_404(Stock, pk=stock_id)
+    try:
+        order, realized_pnl = exit_position(request.user, stock)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    else:
+        if order.status == Order.Status.FILLED:
+            result = 'made' if realized_pnl >= 0 else 'lost'
+            messages.success(
+                request,
+                f'Exited {stock.symbol} at {order.price}. You {result} ${abs(realized_pnl):.2f}.',
+            )
+        else:
+            messages.error(request, order.rejection_reason)
+    return redirect('paper_trading:paper_account')
 
 
 @login_required
