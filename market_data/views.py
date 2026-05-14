@@ -6,7 +6,13 @@ from django.urls import reverse
 from .charting import chart_context, chart_request_options
 from .forms import StockForm
 from .models import Stock
-from .services import import_alpha_vantage_daily, import_default_commodities, seed_sample_prices
+from .services import (
+    import_alpha_vantage_commodity,
+    import_alpha_vantage_daily,
+    import_default_commodities,
+    is_alpha_vantage_commodity_symbol,
+    seed_sample_prices,
+)
 
 
 def chart_stock_options():
@@ -117,12 +123,17 @@ def seed_prices(request, pk):
 
 @login_required
 def refresh_alpha_vantage(request, pk):
-    """Refresh one stock from Alpha Vantage daily data."""
+    """Refresh one stock or supported commodity from free Alpha Vantage data."""
     stock = get_object_or_404(Stock, pk=pk)
     try:
-        imported = import_alpha_vantage_daily(stock)
+        if is_alpha_vantage_commodity_symbol(stock.symbol):
+            _, imported = import_alpha_vantage_commodity(stock.symbol, stock=stock)
+            source_label = 'commodity'
+        else:
+            imported = import_alpha_vantage_daily(stock)
+            source_label = 'daily stock'
     except Exception as exc:
         messages.error(request, f'Could not refresh {stock.symbol}: {exc}')
     else:
-        messages.success(request, f'{imported} new Alpha Vantage rows imported for {stock.symbol}.')
+        messages.success(request, f'{imported} new free Alpha Vantage {source_label} rows imported for {stock.symbol}.')
     return redirect('market_data:stock_detail', pk=stock.pk)

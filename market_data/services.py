@@ -40,6 +40,17 @@ COMMODITY_DEFINITIONS = {
     },
 }
 
+COMMODITY_SYMBOL_ALIASES = {
+    'CL=F': 'WTI',
+    'GC=F': 'GOLD',
+    'GOLD': 'GOLD',
+    'NG=F': 'NATURAL_GAS',
+    'NATGAS': 'NATURAL_GAS',
+    'NATURAL_GAS': 'NATURAL_GAS',
+    'WTI': 'WTI',
+    'XAU': 'GOLD',
+}
+
 ALPHA_VANTAGE_DAILY_TTL = 15 * 60
 ALPHA_VANTAGE_COMMODITY_TTL = 6 * 60 * 60
 
@@ -49,9 +60,9 @@ def to_decimal(value):
     return Decimal(str(value)).quantize(Decimal('0.0001'))
 
 
-def alpha_vantage_daily_cache_key(symbol, outputsize):
+def alpha_vantage_daily_cache_key(symbol):
     """Build the cache key for Alpha Vantage daily stock data."""
-    return f'av_daily:{symbol.upper()}:{outputsize}'
+    return f'av_daily:{symbol.upper()}:compact'
 
 
 def alpha_vantage_commodity_cache_key(definition):
@@ -71,6 +82,17 @@ def commodity_row_value(row):
         if value not in (None, '.', ''):
             return value
     return None
+
+
+def alpha_vantage_commodity_key(symbol):
+    """Return the supported commodity key for a user-entered symbol."""
+    cleaned = symbol.upper().strip()
+    return COMMODITY_SYMBOL_ALIASES.get(cleaned, cleaned)
+
+
+def is_alpha_vantage_commodity_symbol(symbol):
+    """Return true when ``symbol`` can use a free Alpha Vantage commodity feed."""
+    return alpha_vantage_commodity_key(symbol) in COMMODITY_DEFINITIONS
 
 
 def latest_price(stock):
@@ -108,8 +130,8 @@ class AlphaVantageClient:
         """Use the given API key or the key from settings."""
         self.api_key = api_key or settings.ALPHA_VANTAGE_API_KEY
 
-    def daily(self, symbol, outputsize='compact'):
-        """Return Alpha Vantage daily OHLCV rows for a stock symbol.
+    def daily(self, symbol):
+        """Return free Alpha Vantage daily OHLCV rows for a stock symbol.
 
         Raises:
             ValueError: if the API key is missing or Alpha Vantage responds
@@ -118,7 +140,7 @@ class AlphaVantageClient:
         """
         if not self.api_key:
             raise ValueError('ALPHA_VANTAGE_API_KEY is not configured.')
-        cache_key = alpha_vantage_daily_cache_key(symbol, outputsize)
+        cache_key = alpha_vantage_daily_cache_key(symbol)
         cached_series = safe_cache_get(cache_key)
         if cached_series is not None:
             return cached_series
@@ -128,7 +150,7 @@ class AlphaVantageClient:
             params={
                 'function': 'TIME_SERIES_DAILY',
                 'symbol': symbol.upper(),
-                'outputsize': outputsize,
+                'outputsize': 'compact',
                 'apikey': self.api_key,
             },
             timeout=20,
@@ -174,18 +196,17 @@ class AlphaVantageClient:
         return data
 
 
-def import_alpha_vantage_daily(stock, outputsize='compact'):
-    """Import Alpha Vantage daily equity data for a stock.
+def import_alpha_vantage_daily(stock):
+    """Import free Alpha Vantage daily equity data for a stock.
 
     Parameters:
         stock: ``Stock`` instance whose symbol will be requested.
-        outputsize: Alpha Vantage output size, usually ``compact`` or ``full``.
 
     Returns:
         The number of new ``PriceData`` rows. Existing timestamps are updated,
         so running the import again is safe.
     """
-    series = AlphaVantageClient().daily(stock.symbol, outputsize=outputsize)
+    series = AlphaVantageClient().daily(stock.symbol)
     imported = 0
     for day_text, row in series.items():
         day = datetime.combine(date.fromisoformat(day_text), time.min)
@@ -206,11 +227,13 @@ def import_alpha_vantage_daily(stock, outputsize='compact'):
     return imported
 
 
-def import_alpha_vantage_commodity(symbol):
+def import_alpha_vantage_commodity(symbol, stock=None):
     """Import a supported Alpha Vantage commodity.
 
     Parameters:
-        symbol: One of the keys in ``COMMODITY_DEFINITIONS``.
+        symbol: One of the keys in ``COMMODITY_DEFINITIONS`` or a supported
+            alias like ``GC=F``.
+        stock: Optional existing ``Stock`` row to receive imported prices.
 
     Returns:
         ``(stock, imported_count)`` where ``stock`` is the commodity ``Stock``
@@ -220,19 +243,20 @@ def import_alpha_vantage_commodity(symbol):
         ValueError: if the symbol is not supported or the API returns no
         usable data.
     """
-    key = symbol.upper().strip()
+    key = alpha_vantage_commodity_key(symbol)
     if key not in COMMODITY_DEFINITIONS:
         raise ValueError(f'Unsupported commodity: {symbol}')
 
     definition = COMMODITY_DEFINITIONS[key]
-    stock, _ = Stock.objects.get_or_create(
-        symbol=key,
-        defaults={
-            'name': definition['name'],
-            'exchange': definition['exchange'],
-            'currency': 'USD',
-        },
-    )
+    if stock is None:
+        stock, _ = Stock.objects.get_or_create(
+            symbol=key,
+            defaults={
+                'name': definition['name'],
+                'exchange': definition['exchange'],
+                'currency': 'USD',
+            },
+        )
     data = AlphaVantageClient().commodity_history(definition)
     imported = 0
 
