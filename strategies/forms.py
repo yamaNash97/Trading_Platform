@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from django import forms
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 from .models import Strategy
 
@@ -17,6 +20,29 @@ class StrategyForm(forms.ModelForm):
     rsi_period = forms.IntegerField(min_value=2, initial=14)
     rsi_buy_threshold = forms.IntegerField(min_value=1, max_value=99, initial=30)
     rsi_sell_threshold = forms.IntegerField(min_value=1, max_value=99, initial=70)
+    initial_balance = forms.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('1'))],
+    )
+    position_size_percent = forms.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(Decimal('0.01')),
+            MaxValueValidator(Decimal('100')),
+        ],
+    )
+    stop_loss_percent = forms.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0'))],
+    )
+    take_profit_percent = forms.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0'))],
+    )
 
     class Meta:
         model = Strategy
@@ -48,10 +74,24 @@ class StrategyForm(forms.ModelForm):
                 self.fields[field].initial = params.get(field, self.fields[field].initial)
 
     def clean(self):
-        """Make sure the crossover windows are ordered correctly."""
+        """Validate money, risk percentage, and indicator relationships."""
         cleaned = super().clean()
+        initial_balance = cleaned.get('initial_balance')
+        position_size_percent = cleaned.get('position_size_percent')
+        stop_loss_percent = cleaned.get('stop_loss_percent')
+        take_profit_percent = cleaned.get('take_profit_percent')
         short_window = cleaned.get('short_window')
         long_window = cleaned.get('long_window')
+        if initial_balance is not None and initial_balance <= Decimal('0'):
+            self.add_error('initial_balance', 'Initial balance must be positive.')
+        if position_size_percent is not None and (
+            position_size_percent <= Decimal('0') or position_size_percent > Decimal('100')
+        ):
+            self.add_error('position_size_percent', 'Position size must be greater than 0 and no more than 100%.')
+        if stop_loss_percent is not None and stop_loss_percent < Decimal('0'):
+            self.add_error('stop_loss_percent', 'Stop loss must be 0 or greater.')
+        if take_profit_percent is not None and take_profit_percent < Decimal('0'):
+            self.add_error('take_profit_percent', 'Take profit must be 0 or greater.')
         if short_window and long_window and short_window >= long_window:
             self.add_error('long_window', 'Long moving average must be greater than short moving average.')
         return cleaned

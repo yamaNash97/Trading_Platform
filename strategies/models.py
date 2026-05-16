@@ -20,7 +20,7 @@ class Strategy(models.Model):
         COMBINED = 'combined', 'Combined MA + RSI'
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='strategies', on_delete=models.CASCADE)
-    stock = models.ForeignKey(Stock, related_name='strategies', on_delete=models.CASCADE)
+    stock = models.ForeignKey(Stock, related_name='strategies', on_delete=models.PROTECT)
     name = models.CharField(max_length=120)
     strategy_type = models.CharField(max_length=32, choices=StrategyType.choices)
     # JSON keeps strategy-specific settings flexible without a migration for

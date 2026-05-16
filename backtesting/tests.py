@@ -3,12 +3,14 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from market_data.models import PriceData, Stock
 from market_data.services import seed_sample_prices
+from strategies.forms import StrategyForm
 from strategies.models import Strategy
 
 from .models import BacktestResult, BacktestTrade
@@ -16,6 +18,150 @@ from .services import run_backtest
 
 
 class BacktestEngineTests(TestCase):
+    def test_backtest_rejects_non_positive_initial_balance(self):
+        user = User.objects.create_user(username='zero-balance-user', password='test-pass-123')
+        stock = Stock.objects.create(symbol='AAPL', name='Apple Inc.')
+        strategy = Strategy.objects.create(
+            user=user,
+            stock=stock,
+            name='Zero balance strategy',
+            strategy_type=Strategy.StrategyType.MOVING_AVERAGE,
+            parameters={'short_window': 2, 'long_window': 3},
+            initial_balance=0,
+            position_size_percent=50,
+        )
+        today = timezone.now().date()
+
+        with self.assertRaisesMessage(ValueError, 'Initial balance must be positive to calculate returns.'):
+            run_backtest(user, strategy, today - timedelta(days=10), today)
+
+    def test_backtest_rejects_empty_price_history_with_range_details(self):
+        user = User.objects.create_user(username='empty-price-user', password='test-pass-123')
+        stock = Stock.objects.create(symbol='empty', name='No Prices Inc.')
+        strategy = Strategy.objects.create(
+            user=user,
+            stock=stock,
+            name='Empty price strategy',
+            strategy_type=Strategy.StrategyType.MOVING_AVERAGE,
+            parameters={'short_window': 2, 'long_window': 3},
+            initial_balance=10000,
+            position_size_percent=50,
+        )
+        today = timezone.now().date()
+        start_date = today - timedelta(days=10)
+
+        with self.assertRaisesMessage(ValueError, f'No price history found for EMPTY from {start_date} to {today}.'):
+            run_backtest(user, strategy, start_date, today)
+
+    def test_backtest_without_completed_trades_has_zero_win_loss_ratio(self):
+        user = User.objects.create_user(username='no-trade-user', password='test-pass-123')
+        stock = Stock.objects.create(symbol='FLAT', name='Flat Price Inc.')
+        today = timezone.now().date()
+        for offset in range(5):
+            PriceData.objects.create(
+                stock=stock,
+                timestamp=timezone.make_aware(datetime.combine(today - timedelta(days=4 - offset), time.min)),
+                open_price='100.0000',
+                high_price='100.0000',
+                low_price='100.0000',
+                close_price='100.0000',
+                volume=1000,
+                source='manual',
+            )
+        strategy = Strategy.objects.create(
+            user=user,
+            stock=stock,
+            name='No trade strategy',
+            strategy_type=Strategy.StrategyType.MOVING_AVERAGE,
+            parameters={'short_window': 2, 'long_window': 3},
+            initial_balance=10000,
+            position_size_percent=50,
+        )
+
+        result = run_backtest(user, strategy, today - timedelta(days=5), today)
+
+        self.assertEqual(result.number_of_trades, 0)
+        self.assertEqual(result.win_loss_ratio, Decimal('0.00'))
+
+    def test_strategy_form_rejects_invalid_risk_parameters(self):
+        stock = Stock.objects.create(symbol='AAPL', name='Apple Inc.')
+
+        form = StrategyForm(
+            data={
+                'stock': stock.pk,
+                'name': 'Invalid risk strategy',
+                'strategy_type': Strategy.StrategyType.MOVING_AVERAGE,
+                'initial_balance': '0',
+                'position_size_percent': '0',
+                'stop_loss_percent': '-1',
+                'take_profit_percent': '-1',
+                'short_window': '5',
+                'long_window': '5',
+                'rsi_period': '14',
+                'rsi_buy_threshold': '30',
+                'rsi_sell_threshold': '70',
+                'is_active': 'on',
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('initial_balance', form.errors)
+        self.assertIn('position_size_percent', form.errors)
+        self.assertIn('stop_loss_percent', form.errors)
+        self.assertIn('take_profit_percent', form.errors)
+        self.assertIn('long_window', form.errors)
+
+    def test_strategy_delete_preserves_backtest_result(self):
+        user = User.objects.create_user(username='archive-user', password='test-pass-123')
+        stock = Stock.objects.create(symbol='SAVE', name='Saved Result Inc.')
+        strategy = Strategy.objects.create(
+            user=user,
+            stock=stock,
+            name='Archived strategy',
+            strategy_type=Strategy.StrategyType.MOVING_AVERAGE,
+            parameters={'short_window': 2, 'long_window': 3},
+            initial_balance=10000,
+            position_size_percent=50,
+        )
+        today = timezone.now().date()
+        result = BacktestResult.objects.create(
+            user=user,
+            strategy=strategy,
+            stock=stock,
+            start_date=today - timedelta(days=5),
+            end_date=today,
+            initial_balance=Decimal('10000.00'),
+            final_balance=Decimal('10000.00'),
+            total_return=Decimal('0.00'),
+            max_drawdown=Decimal('0.00'),
+            number_of_trades=0,
+            win_loss_ratio=Decimal('0.00'),
+        )
+
+        strategy.delete()
+        result.refresh_from_db()
+
+        self.assertIsNone(result.strategy)
+        self.assertTrue(BacktestResult.objects.filter(pk=result.pk).exists())
+
+    def test_stock_delete_is_protected_when_strategy_exists(self):
+        user = User.objects.create_user(username='protect-stock-user', password='test-pass-123')
+        stock = Stock.objects.create(symbol='HOLD', name='Protected Stock Inc.')
+        Strategy.objects.create(
+            user=user,
+            stock=stock,
+            name='Protecting strategy',
+            strategy_type=Strategy.StrategyType.MOVING_AVERAGE,
+            parameters={'short_window': 2, 'long_window': 3},
+            initial_balance=10000,
+            position_size_percent=50,
+        )
+
+        with self.assertRaises(ProtectedError):
+            stock.delete()
+
+        self.assertTrue(Stock.objects.filter(pk=stock.pk).exists())
+
     def test_backtest_creates_result_with_equity_curve(self):
         user = User.objects.create_user(username='trader', password='test-pass-123')
         stock = Stock.objects.create(symbol='AAPL', name='Apple Inc.')

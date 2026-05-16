@@ -14,7 +14,7 @@ class BacktestResult(models.Model):
     """
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='backtests', on_delete=models.CASCADE)
-    strategy = models.ForeignKey(Strategy, related_name='backtests', on_delete=models.CASCADE)
+    strategy = models.ForeignKey(Strategy, related_name='backtests', on_delete=models.SET_NULL, null=True, blank=True)
     stock = models.ForeignKey(Stock, related_name='backtests', on_delete=models.CASCADE)
     start_date = models.DateField()
     end_date = models.DateField()
@@ -33,7 +33,8 @@ class BacktestResult(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.strategy.name} on {self.stock.symbol}: {self.total_return}%'
+        strategy_name = self.strategy.name if self.strategy else 'Deleted strategy'
+        return f'{strategy_name} on {self.stock.symbol}: {self.total_return}%'
 
 
 class BacktestTrade(models.Model):

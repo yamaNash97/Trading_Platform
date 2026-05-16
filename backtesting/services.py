@@ -93,12 +93,22 @@ def run_backtest(user, strategy, start_date, end_date):
         ValueError: if the selected date range has too little price history for
         the strategy's long moving-average window.
     """
-    prices = list(backtest_price_queryset(strategy.stock, start_date, end_date))
-    if len(prices) < strategy.long_window:
-        raise ValueError('Not enough price history for the selected strategy and date range.')
-
-    cash = Decimal(strategy.initial_balance)
     initial_balance = Decimal(strategy.initial_balance)
+    if initial_balance <= Decimal('0'):
+        raise ValueError('Initial balance must be positive to calculate returns.')
+
+    prices = list(backtest_price_queryset(strategy.stock, start_date, end_date))
+    if not prices:
+        raise ValueError(
+            f'No price history found for {strategy.stock.symbol} from {start_date} to {end_date}.'
+        )
+    if len(prices) < strategy.long_window:
+        raise ValueError(
+            f'Not enough price history for {strategy.stock.symbol} from {start_date} to {end_date}: '
+            f'found {len(prices)} rows, need at least {strategy.long_window} for the long moving-average window.'
+        )
+
+    cash = initial_balance
     position_qty = Decimal('0')
     entry_price = None
     open_trade = None
@@ -166,8 +176,15 @@ def run_backtest(user, strategy, start_date, end_date):
     total_return = percent(((final_balance - initial_balance) / initial_balance) * Decimal('100'))
     wins = sum(1 for trade in completed if trade.pnl > 0)
     losses = sum(1 for trade in completed if trade.pnl <= 0)
-    # If there are no losses, the ratio is stored as the number of wins.
-    win_loss_ratio = percent(Decimal(wins) / Decimal(losses)) if losses else percent(wins)
+    completed_trades = len(completed)
+    if completed_trades == 0:
+        win_loss_ratio = percent(Decimal('0'))
+    elif losses == 0:
+        win_loss_ratio = percent(Decimal(wins))
+    elif wins == 0:
+        win_loss_ratio = percent(Decimal('0'))
+    else:
+        win_loss_ratio = percent(Decimal(wins) / Decimal(losses))
 
     result = BacktestResult.objects.create(
         user=user,
