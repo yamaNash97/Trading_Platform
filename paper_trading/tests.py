@@ -65,13 +65,26 @@ class PaperTradingTests(TestCase):
 
         order = Order(user=user, stock=stock, order_type=Order.OrderType.BUY, quantity=Decimal('1'))
         execute_order(order)
+        refreshed_price = order.price + Decimal('25.0000')
 
-        with patch('market_data.charting.refresh_yfinance_prices', return_value=0) as refresh:
+        def fake_refresh(refreshed_stock):
+            latest = refreshed_stock.price_data.order_by('-timestamp').first()
+            latest.close_price = refreshed_price
+            latest.open_price = refreshed_price
+            latest.high_price = refreshed_price
+            latest.low_price = refreshed_price
+            latest.source = 'yfinance'
+            latest.save()
+            return 0
+
+        with patch('market_data.charting.refresh_yfinance_prices', side_effect=fake_refresh) as refresh:
             response = self.client.get(reverse('paper_trading:open_trades'), {'refresh': '1'})
 
         self.assertEqual(response.status_code, 200)
         refresh.assert_called_once_with(stock)
         self.assertContains(response, 'Open trades')
+        self.assertContains(response, f'${refreshed_price:.2f}')
+        self.assertContains(response, '$25.00')
         self.assertContains(response, 'Exit')
 
     def test_price_chart_fragment_renders_chart_controls(self):
