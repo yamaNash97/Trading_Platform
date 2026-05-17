@@ -26,7 +26,7 @@ swaps because swapped HTML can contain new data-lucide placeholders.
 <body class="text-light app-shell">
   <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
     <div class="container">
-      <a class="navbar-brand fw-bold" href="{% url 'portfolio:dashboard' %}">TradSim</a>
+      <a class="navbar-brand fw-bold" href="{% url 'portfolio:dashboard' %}">TradeSim</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -41,7 +41,8 @@ swaps because swapped HTML can contain new data-lucide placeholders.
         </ul>
         <form method="post" action="{% url 'logout' %}" class="d-flex">
           {% csrf_token %}
-          <button class="btn btn-outline-secondary btn-sm app-navbar-action" type="submit"><i data-lucide="log-out"></i> Sign out</button>
+          <button class="btn btn-outline-secondary btn-sm app-navbar-action" type="submit"><i data-lucide="log-out"></i>
+            Sign out</button>
         </form>
         {% else %}
         <div class="ms-auto d-flex gap-2">
@@ -55,7 +56,8 @@ swaps because swapped HTML can contain new data-lucide placeholders.
   <main class="container py-4">
     {% for message in messages %}
     {# data-auto-dismiss-* is read by main.js to fade messages after a delay. #}
-    <div class="alert alert-{{ message.tags|default:'info' }} fade show" role="alert" data-auto-dismiss-alert data-auto-dismiss-ms="10000">
+    <div class="alert alert-{{ message.tags|default:'info' }} fade show" role="alert" data-auto-dismiss-alert
+      data-auto-dismiss-ms="10000">
       {{ message }}
     </div>
     {% endfor %}
