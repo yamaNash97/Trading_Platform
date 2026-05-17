@@ -35,8 +35,7 @@ This repository includes `render.yaml` and `build.sh` for Render.
 2. In Render, create a new Blueprint from the repository, or create a Python Web Service manually.
 3. Use these manual settings if you do not use the Blueprint:
    - Build Command: `bash build.sh`
-   - Pre-Deploy Command: `python manage.py migrate`
-   - Start Command: `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`
+   - Start Command: `python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`
 4. Create or attach a Render PostgreSQL database and set `DATABASE_URL` to its internal connection string.
 5. Set environment variables:
    - `DJANGO_DEBUG=False`
@@ -46,6 +45,7 @@ This repository includes `render.yaml` and `build.sh` for Render.
    - `ALPHA_VANTAGE_API_KEY=<optional-live-market-data-key>`
 
 The project includes `.python-version` with Python 3.13 so Render uses a Django 6 compatible runtime. The free Render PostgreSQL plan is good for demos, but free databases expire after 30 days.
+The migration command is part of the Start Command because Render's Pre-Deploy Command is not available on the free tier.
 
 After the first deploy, create an admin user from the Render Shell:
 
