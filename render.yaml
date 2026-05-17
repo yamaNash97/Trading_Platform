@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: trading-platform
+    runtime: python
+    plan: free
+    buildCommand: bash build.sh
+    preDeployCommand: python manage.py migrate
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: ALPHA_VANTAGE_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trading-platform-db
+          property: connectionString
+
+databases:
+  - name: trading-platform-db
+    plan: free
