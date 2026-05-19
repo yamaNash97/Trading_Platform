@@ -30,7 +30,7 @@ def dashboard(request):
     """
     account = get_or_create_account(request.user)
     # select_related keeps each table row from doing an extra stock query.
-    holdings = list(PortfolioHolding.objects.filter(user=request.user).select_related('stock'))
+    holdings = list(PortfolioHolding.objects.filter(user=request.user, quantity__gt=0).select_related('stock'))
     portfolio_value = sum((holding.market_value() for holding in holdings), Decimal('0'))
     unrealized_pnl = sum((holding.unrealized_pnl() for holding in holdings), Decimal('0'))
     # The dashboard only needs small recent activity lists.

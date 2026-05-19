@@ -1,6 +1,13 @@
+from decimal import Decimal
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+
+from market_data.models import Stock
+from market_data.services import seed_sample_prices
+from paper_trading.models import Order
+from paper_trading.services import execute_order, exit_position
 
 
 class DashboardViewTests(TestCase):
@@ -38,3 +45,22 @@ class DashboardViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Portfolio Dashboard')
+
+    def test_dashboard_hides_fully_exited_paper_holding(self):
+        user = User.objects.create_user(username='closed-viewer', password='test-pass-123')
+        stock = Stock.objects.create(symbol='NVDA', name='NVIDIA Corporation')
+        seed_sample_prices(stock, days=10)
+        self.client.login(username='closed-viewer', password='test-pass-123')
+
+        buy_order = Order(user=user, stock=stock, order_type=Order.OrderType.BUY, quantity=Decimal('1'))
+        execute_order(buy_order)
+        sell_order, _ = exit_position(user, stock)
+
+        response = self.client.get(reverse('portfolio:dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(sell_order.status, Order.Status.FILLED)
+        self.assertEqual(response.context['holdings'], [])
+        self.assertContains(response, 'No open positions yet.')
+        self.assertContains(response, 'Sell')
+        self.assertContains(response, 'NVDA')

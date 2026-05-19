@@ -1,0 +1,20 @@
+$ C:\Users\yaman\AppData\Local\Programs\Python\Python313\python.exe manage.py test --noinput
+
+STDOUT:
+Found 29 test(s).
+System check identified no issues (0 silenced).
+
+
+STDERR:
+Creating test database for alias 'default'...
+
+.............................
+----------------------------------------------------------------------
+Ran 29 tests in 80.734s
+
+OK
+Destroying test database for alias 'default'...
+
+
+
+EXIT CODE: 0
