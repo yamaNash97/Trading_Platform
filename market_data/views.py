@@ -82,18 +82,6 @@ def stock_detail(request, pk):
 
 
 @login_required
-def stock_price_chart(request, pk):
-    """Render chart HTML for a stock-specific URL.
-
-    This view is useful when the URL already has a stock id. The stock pages use
-    ``stock_chart`` because it can also answer dropdown changes.
-    """
-    stock = get_object_or_404(Stock, pk=pk)
-    chart = chart_with_stock_options(stock, request)
-    return render(request, 'market_data/_price_chart.html', {'chart': chart})
-
-
-@login_required
 def stock_chart(request):
     """Render reusable market chart HTML for HTMX requests.
 
