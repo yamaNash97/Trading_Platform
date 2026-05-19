@@ -15,8 +15,10 @@ HTMX/JS: no HTMX; base.html/main.js starts Lucide icons.
     <div class="text-secondary">For adding stock details vist <a href="https://finance.yahoo.com/"
         style="text-decoration: none !important; color: #9D61FF !important;" target="_blank">Yahoo! finance.</a></div>
   </div>
-  <a class="btn btn-success" href="{% url 'market_data:import_commodities' %}"><i data-lucide="download"></i> Import
-    commodities</a>
+  <form method="post" action="{% url 'market_data:import_commodities' %}" class="m-0">
+    {% csrf_token %}
+    <button class="btn btn-success" type="submit"><i data-lucide="download"></i> Import commodities</button>
+  </form>
 </div>
 <div class="row g-3">
   <div class="col-lg-4">

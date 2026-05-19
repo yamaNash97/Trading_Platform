@@ -31,6 +31,43 @@ class MarketDataTests(TestCase):
         self.assertEqual(stock.price_data.count(), 30)
         self.assertEqual(stock.symbol, 'MSFT')
 
+    def test_seed_prices_get_does_not_write_rows(self):
+        stock = Stock.objects.create(symbol='msft', name='Microsoft Corporation')
+        self.client.login(username='market-user', password='test-pass-123')
+
+        response = self.client.get(reverse('market_data:seed_prices', args=[stock.pk]))
+
+        self.assertRedirects(response, reverse('market_data:stock_detail', args=[stock.pk]))
+        self.assertEqual(stock.price_data.count(), 0)
+
+    def test_seed_prices_post_creates_rows(self):
+        stock = Stock.objects.create(symbol='msft', name='Microsoft Corporation')
+        self.client.login(username='market-user', password='test-pass-123')
+
+        response = self.client.post(reverse('market_data:seed_prices', args=[stock.pk]))
+
+        self.assertRedirects(response, reverse('market_data:stock_detail', args=[stock.pk]))
+        self.assertEqual(stock.price_data.count(), 260)
+
+    def test_import_commodities_get_does_not_start_import(self):
+        self.client.login(username='market-user', password='test-pass-123')
+
+        with patch('market_data.views.import_default_commodities') as import_default:
+            response = self.client.get(reverse('market_data:import_commodities'), follow=True)
+
+        import_default.assert_not_called()
+        self.assertContains(response, 'Use the Import commodities button to start the import.')
+
+    def test_import_commodities_post_runs_import(self):
+        stock = Stock.objects.create(symbol='WTI', name='Crude Oil WTI', exchange='Commodity')
+        self.client.login(username='market-user', password='test-pass-123')
+
+        with patch('market_data.views.import_default_commodities', return_value=[(stock, 2)]) as import_default:
+            response = self.client.post(reverse('market_data:import_commodities'), follow=True)
+
+        import_default.assert_called_once_with()
+        self.assertContains(response, 'Commodity import complete. New rows: WTI: 2.')
+
     def test_commodity_import_normalizes_close_only_series(self):
         class FakeClient:
             def commodity_history(self, definition):
@@ -41,14 +78,40 @@ class MarketDataTests(TestCase):
         services.AlphaVantageClient = lambda: FakeClient()
         try:
             stock, imported = import_alpha_vantage_commodity('GOLD')
+            _, imported_again = import_alpha_vantage_commodity('GOLD')
         finally:
             services.AlphaVantageClient = original_client
 
         price = stock.price_data.get()
         self.assertEqual(imported, 1)
+        self.assertEqual(imported_again, 0)
+        self.assertEqual(stock.price_data.count(), 1)
         self.assertEqual(stock.name, COMMODITY_DEFINITIONS['GOLD']['name'])
         self.assertEqual(price.open_price, price.close_price)
         self.assertEqual(price.volume, 0)
+
+    def test_commodity_import_updates_changed_existing_price_without_new_row(self):
+        class FakeClient:
+            def __init__(self):
+                self.responses = [
+                    [{'date': '2026-05-01', 'price': '2300.25'}],
+                    [{'date': '2026-05-01', 'price': '2400.50'}],
+                ]
+
+            def commodity_history(self, definition):
+                return self.responses.pop(0)
+
+        fake_client = FakeClient()
+
+        with patch('market_data.services.AlphaVantageClient', return_value=fake_client):
+            stock, imported = import_alpha_vantage_commodity('WTI')
+            same_stock, imported_again = import_alpha_vantage_commodity('WTI')
+
+        price = stock.price_data.get()
+        self.assertEqual(same_stock, stock)
+        self.assertEqual(imported, 1)
+        self.assertEqual(imported_again, 0)
+        self.assertEqual(str(price.close_price), '2400.5000')
 
     def test_alpha_vantage_daily_client_uses_free_compact_output(self):
         response = Mock()

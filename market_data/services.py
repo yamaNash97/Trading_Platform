@@ -13,6 +13,7 @@ from decimal import Decimal
 import requests
 from django.conf import settings
 from django.core.cache import cache
+from django.db import transaction
 from django.utils import timezone
 
 from .models import PriceData, Stock
@@ -53,6 +54,14 @@ COMMODITY_SYMBOL_ALIASES = {
 
 ALPHA_VANTAGE_DAILY_TTL = 15 * 60
 ALPHA_VANTAGE_COMMODITY_TTL = 6 * 60 * 60
+PRICE_DATA_UPDATE_FIELDS = [
+    'open_price',
+    'high_price',
+    'low_price',
+    'close_price',
+    'volume',
+    'source',
+]
 
 
 def to_decimal(value):
@@ -93,6 +102,56 @@ def alpha_vantage_commodity_key(symbol):
 def is_alpha_vantage_commodity_symbol(symbol):
     """Return true when ``symbol`` can use a free Alpha Vantage commodity feed."""
     return alpha_vantage_commodity_key(symbol) in COMMODITY_DEFINITIONS
+
+
+def price_row_changed(existing, incoming):
+    """Return true when a saved price row differs from incoming API data."""
+    return any(getattr(existing, field) != getattr(incoming, field) for field in PRICE_DATA_UPDATE_FIELDS)
+
+
+def sync_price_rows(stock, rows):
+    """Bulk create new price rows and update changed existing rows.
+
+    The API endpoints often return full history. Avoiding writes for unchanged
+    rows keeps repeated imports fast and reduces SQLite lock contention.
+    """
+    incoming_by_timestamp = {row.timestamp: row for row in rows}
+    if not incoming_by_timestamp:
+        return 0
+
+    existing_by_timestamp = {
+        row.timestamp: row
+        for row in PriceData.objects.filter(stock=stock, timestamp__in=incoming_by_timestamp.keys()).only(
+            'id',
+            'timestamp',
+            *PRICE_DATA_UPDATE_FIELDS,
+        )
+    }
+    rows_to_create = []
+    rows_to_update = []
+
+    for timestamp, incoming in incoming_by_timestamp.items():
+        existing = existing_by_timestamp.get(timestamp)
+        if existing is None:
+            rows_to_create.append(incoming)
+        elif price_row_changed(existing, incoming):
+            for field in PRICE_DATA_UPDATE_FIELDS:
+                setattr(existing, field, getattr(incoming, field))
+            rows_to_update.append(existing)
+
+    with transaction.atomic():
+        if rows_to_create:
+            PriceData.objects.bulk_create(
+                rows_to_create,
+                batch_size=200,
+                update_conflicts=True,
+                unique_fields=['stock', 'timestamp'],
+                update_fields=PRICE_DATA_UPDATE_FIELDS,
+            )
+        if rows_to_update:
+            PriceData.objects.bulk_update(rows_to_update, PRICE_DATA_UPDATE_FIELDS, batch_size=200)
+
+    return len(rows_to_create)
 
 
 def latest_price(stock):
@@ -207,24 +266,23 @@ def import_alpha_vantage_daily(stock):
         so running the import again is safe.
     """
     series = AlphaVantageClient().daily(stock.symbol)
-    imported = 0
+    rows = []
     for day_text, row in series.items():
         day = datetime.combine(date.fromisoformat(day_text), time.min)
         timestamp = timezone.make_aware(day, timezone.get_current_timezone())
-        _, created = PriceData.objects.update_or_create(
-            stock=stock,
-            timestamp=timestamp,
-            defaults={
-                'open_price': to_decimal(row['1. open']),
-                'high_price': to_decimal(row['2. high']),
-                'low_price': to_decimal(row['3. low']),
-                'close_price': to_decimal(row['4. close']),
-                'volume': int(row['5. volume']),
-                'source': 'alpha_vantage',
-            },
+        rows.append(
+            PriceData(
+                stock=stock,
+                timestamp=timestamp,
+                open_price=to_decimal(row['1. open']),
+                high_price=to_decimal(row['2. high']),
+                low_price=to_decimal(row['3. low']),
+                close_price=to_decimal(row['4. close']),
+                volume=int(row['5. volume']),
+                source='alpha_vantage',
+            )
         )
-        imported += int(created)
-    return imported
+    return sync_price_rows(stock, rows)
 
 
 def import_alpha_vantage_commodity(symbol, stock=None):
@@ -258,7 +316,7 @@ def import_alpha_vantage_commodity(symbol, stock=None):
             },
         )
     data = AlphaVantageClient().commodity_history(definition)
-    imported = 0
+    rows = []
 
     for row in data:
         # Commodity rows usually have one price value, so OHLC all use that
@@ -269,20 +327,19 @@ def import_alpha_vantage_commodity(symbol, stock=None):
         day = datetime.combine(date.fromisoformat(row['date']), time.min)
         timestamp = timezone.make_aware(day, timezone.get_current_timezone())
         price = to_decimal(value)
-        _, created = PriceData.objects.update_or_create(
-            stock=stock,
-            timestamp=timestamp,
-            defaults={
-                'open_price': price,
-                'high_price': price,
-                'low_price': price,
-                'close_price': price,
-                'volume': 0,
-                'source': f'alpha_vantage_{definition["function"].lower()}',
-            },
+        rows.append(
+            PriceData(
+                stock=stock,
+                timestamp=timestamp,
+                open_price=price,
+                high_price=price,
+                low_price=price,
+                close_price=price,
+                volume=0,
+                source=f'alpha_vantage_{definition["function"].lower()}',
+            )
         )
-        imported += int(created)
-    return stock, imported
+    return stock, sync_price_rows(stock, rows)
 
 
 def import_default_commodities():
@@ -304,13 +361,17 @@ def seed_sample_prices(stock, days=260):
         Number of new rows added. Running it again for the same stock and dates
         is safe because each stock/timestamp pair is unique.
     """
-    rng = random.Random(stock.symbol)
-    start = timezone.now().date() - timedelta(days=days + 40)
-    price = Decimal('80.0000') + Decimal(rng.randint(0, 9000)) / Decimal('100')
-    created = 0
-    day_index = 0
+    if days <= 0:
+        return 0
 
-    for offset in range(days + 40):
+    rng = random.Random(stock.symbol)
+    calendar_span = math.ceil(days * 7 / 5) + 10
+    start = timezone.now().date() - timedelta(days=calendar_span)
+    price = Decimal('80.0000') + Decimal(rng.randint(0, 9000)) / Decimal('100')
+    day_index = 0
+    rows = []
+
+    for offset in range(calendar_span + 1):
         current_day = start + timedelta(days=offset)
         if current_day.weekday() >= 5:
             continue
@@ -326,21 +387,46 @@ def seed_sample_prices(stock, days=260):
         volume = rng.randint(900_000, 8_000_000)
         timestamp = timezone.make_aware(datetime.combine(current_day, time.min))
 
-        _, was_created = PriceData.objects.update_or_create(
-            stock=stock,
-            timestamp=timestamp,
-            defaults={
-                'open_price': to_decimal(open_price),
-                'high_price': to_decimal(high_price),
-                'low_price': to_decimal(low_price),
-                'close_price': to_decimal(close_price),
-                'volume': volume,
-                'source': 'sample',
-            },
+        rows.append(
+            PriceData(
+                stock=stock,
+                timestamp=timestamp,
+                open_price=to_decimal(open_price),
+                high_price=to_decimal(high_price),
+                low_price=to_decimal(low_price),
+                close_price=to_decimal(close_price),
+                volume=volume,
+                source='sample',
+            )
         )
-        created += int(was_created)
         price = close_price
         day_index += 1
         if day_index >= days:
             break
+
+    if not rows:
+        return 0
+
+    timestamps = [row.timestamp for row in rows]
+    existing_timestamps = set(
+        PriceData.objects.filter(stock=stock, timestamp__in=timestamps).values_list('timestamp', flat=True)
+    )
+    created = sum(1 for row in rows if row.timestamp not in existing_timestamps)
+
+    with transaction.atomic():
+        PriceData.objects.bulk_create(
+            rows,
+            batch_size=200,
+            update_conflicts=True,
+            unique_fields=['stock', 'timestamp'],
+            update_fields=[
+                'open_price',
+                'high_price',
+                'low_price',
+                'close_price',
+                'volume',
+                'source',
+            ],
+        )
+
     return created

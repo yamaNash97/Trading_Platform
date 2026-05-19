@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import OperationalError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -54,8 +55,14 @@ def stock_list(request):
 @login_required
 def import_commodities(request):
     """Import the default commodity set and redirect back to the stock list."""
+    if request.method != 'POST':
+        messages.info(request, 'Use the Import commodities button to start the import.')
+        return redirect('market_data:stock_list')
+
     try:
         results = import_default_commodities()
+    except OperationalError:
+        messages.error(request, 'The local database is busy. Please try importing commodities again in a moment.')
     except Exception as exc:
         messages.error(request, f'Could not import commodities: {exc}')
     else:
@@ -116,8 +123,16 @@ def stock_chart(request):
 def seed_prices(request, pk):
     """Create repeatable sample price rows for a stock."""
     stock = get_object_or_404(Stock, pk=pk)
-    created = seed_sample_prices(stock)
-    messages.success(request, f'{created} sample price rows were created for {stock.symbol}.')
+    if request.method != 'POST':
+        messages.info(request, 'Use the Seed sample button to add demo price history.')
+        return redirect('market_data:stock_detail', pk=stock.pk)
+
+    try:
+        created = seed_sample_prices(stock)
+    except OperationalError:
+        messages.error(request, 'The local database is busy. Please try seeding again in a moment.')
+    else:
+        messages.success(request, f'{created} sample price rows were created for {stock.symbol}.')
     return redirect('market_data:stock_detail', pk=stock.pk)
 
 
