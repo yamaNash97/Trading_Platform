@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: bash build.sh
-    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    startCommand: python manage.py migrate --noinput && python manage.py ensure_superuser --skip-if-missing && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: DJANGO_DEBUG
         value: "False"
@@ -14,6 +14,12 @@ services:
         value: "https://*.onrender.com"
       - key: DJANGO_SECRET_KEY
         generateValue: true
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: "admin"
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: "yaman.nashawati@gmail.com"
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
       - key: ALPHA_VANTAGE_API_KEY
         sync: false
       - key: DATABASE_URL
