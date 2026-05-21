@@ -185,6 +185,10 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
+#this is required to prevent Django from converting datetimes to the local timezone on render,
+# which can cause confusion when backtesting strategies with historical data.
+# By keeping USE_TZ = True, we ensure that all datetimes are stored in UTC and rendered consistently
+# regardless of the server's local timezone.
 USE_I18N = True
 
 USE_TZ = True

@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: trading-platform
+    name: tradesim
     runtime: python
     plan: free
     buildCommand: bash build.sh
-    startCommand: python manage.py migrate --noinput && python manage.py ensure_superuser --skip-if-missing && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    startCommand: python manage.py migrate --noinput && python manage.py ensure_superuser && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: DJANGO_DEBUG
         value: "False"
@@ -15,7 +15,7 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_SUPERUSER_USERNAME
-        value: "admin"
+        value: "AdminYama"
       - key: DJANGO_SUPERUSER_EMAIL
         value: "yaman.nashawati@gmail.com"
       - key: DJANGO_SUPERUSER_PASSWORD
