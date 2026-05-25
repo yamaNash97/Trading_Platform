@@ -155,8 +155,14 @@ def sync_price_rows(stock, rows):
 
 
 def latest_price(stock):
-    """Return the latest close price for ``stock`` or zero when no rows exist."""
-    point = stock.price_data.order_by('-timestamp').first()
+    """Return the latest preferred close price for ``stock`` or zero.
+
+    Live/imported providers are preferred over sample rows so demo data cannot
+    mask a fresher real market refresh.
+    """
+    point = stock.price_data.exclude(source='sample').order_by('-timestamp').first()
+    if point is None:
+        point = stock.price_data.order_by('-timestamp').first()
     return point.close_price if point else Decimal('0')
 
 

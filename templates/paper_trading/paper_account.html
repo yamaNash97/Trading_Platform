@@ -42,7 +42,8 @@ the stock select changes; main.js starts the swapped chart HTML.
 </div>
 
 <div class="row g-3 mb-3">
-  <div class="col-12">
+  <div class="col-12" hx-get="{% url 'paper_trading:open_trades' %}?refresh=1" hx-trigger="load"
+    hx-target="#open-trades-panel" hx-swap="outerHTML">
     {% include "paper_trading/_open_trades.html" %}
   </div>
 </div>

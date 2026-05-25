@@ -29,9 +29,10 @@ class PortfolioHolding(models.Model):
         ]
 
     def market_value(self):
-        """Return the holding's value using the latest saved close price."""
-        latest = self.stock.price_data.order_by('-timestamp').first()
-        return self.quantity * latest.close_price if latest else Decimal('0')
+        """Return the holding's value using the preferred latest close price."""
+        from market_data.services import latest_price
+
+        return self.quantity * latest_price(self.stock)
 
     def unrealized_pnl(self):
         """Return open profit/loss against the average buy price."""

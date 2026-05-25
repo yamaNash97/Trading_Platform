@@ -1,16 +1,18 @@
 from unittest.mock import patch
 from decimal import Decimal
+from datetime import timezone as datetime_timezone
 
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
-from market_data.models import Stock
+from market_data.models import PriceData, Stock
 from market_data.services import seed_sample_prices
 from portfolio.models import PortfolioHolding
 
 from .models import Order
-from .services import execute_order, get_or_create_account
+from .services import execute_order, get_or_create_account, open_trade_rows
 
 
 class PaperTradingTests(TestCase):
@@ -86,6 +88,58 @@ class PaperTradingTests(TestCase):
         self.assertContains(response, f'${refreshed_price:.2f}')
         self.assertContains(response, '$25.00')
         self.assertContains(response, 'Exit')
+
+    def test_open_trade_rows_prefer_live_prices_over_newer_sample_rows(self):
+        user = User.objects.create_user(username='paper-live-price', password='test-pass-123')
+        stock = Stock.objects.create(symbol='NVDA', name='NVIDIA Corporation')
+        PriceData.objects.create(
+            stock=stock,
+            timestamp=timezone.datetime(2026, 5, 8, 13, 30, tzinfo=datetime_timezone.utc),
+            open_price='120.0000',
+            high_price='121.0000',
+            low_price='119.0000',
+            close_price='120.0000',
+            volume=1000000,
+            source='yfinance',
+        )
+        PriceData.objects.create(
+            stock=stock,
+            timestamp=timezone.datetime(2026, 5, 9, tzinfo=datetime_timezone.utc),
+            open_price='80.0000',
+            high_price='81.0000',
+            low_price='79.0000',
+            close_price='80.0000',
+            volume=1000,
+            source='sample',
+        )
+        PortfolioHolding.objects.create(
+            user=user,
+            stock=stock,
+            quantity=Decimal('2'),
+            average_buy_price=Decimal('100.0000'),
+        )
+
+        rows, warnings = open_trade_rows(user)
+
+        self.assertEqual(warnings, [])
+        self.assertEqual(rows[0]['current_price'], Decimal('120.0000'))
+        self.assertEqual(rows[0]['unrealized_pnl'], Decimal('40.0000000000'))
+
+    def test_paper_account_open_trades_auto_refreshes_values(self):
+        user = User.objects.create_user(username='paper-auto-refresh', password='test-pass-123')
+        stock = Stock.objects.create(symbol='TSLA', name='Tesla Inc.')
+        seed_sample_prices(stock, days=10)
+        self.client.login(username='paper-auto-refresh', password='test-pass-123')
+
+        order = Order(user=user, stock=stock, order_type=Order.OrderType.BUY, quantity=Decimal('1'))
+        execute_order(order)
+
+        response = self.client.get(reverse('paper_trading:paper_account'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('paper_trading:open_trades') + '?refresh=1')
+        self.assertContains(response, 'hx-trigger="load"')
+        self.assertContains(response, 'hx-trigger="every 300s"')
 
     def test_price_chart_fragment_renders_chart_controls(self):
         user = User.objects.create_user(username='paper-chart', password='test-pass-123')
