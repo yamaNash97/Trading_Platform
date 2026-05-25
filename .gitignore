@@ -4,8 +4,3 @@ db.sqlite3
 .env
 .venv/
 staticfiles/
-<<<<<<< HEAD
-*.log
-=======
-*.log
->>>>>>> afc1dbc50e0d89a0e382f80c87e67df0161c22fa
