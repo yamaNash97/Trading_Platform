@@ -1,4 +1,4 @@
-# Automated Stock Trading Strategy Simulator
+# Design and Implementation of an Automated Stock Trading Strategy Simulator Using Web Technologies (Trading Bot)
 
 Educational Django trading simulator for market data, configurable strategies, historical backtesting, paper orders, and portfolio dashboards.
 
