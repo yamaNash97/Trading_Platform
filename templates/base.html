@@ -6,8 +6,8 @@ backtesting, paper_trading, portfolio, and accounts.
 Main sections: static assets, responsive navbar, flash messages, page content
 block, common JavaScript includes, and icon refresh hook.
 Required context: user, messages, and any child-template blocks.
-HTMX/JS: loads HTMX, Chart.js, Lucide, and main.js; refreshes icons after HTMX
-swaps because swapped HTML can contain new data-lucide placeholders.
+HTMX/JS: loads HTMX, Chart.js, Lucide, and main.js; refreshes icons
+after HTMX swaps because swapped HTML can contain new data-lucide placeholders.
 {% endcomment %}
 <!doctype html>
 <html lang="en">
@@ -67,6 +67,7 @@ swaps because swapped HTML can contain new data-lucide placeholders.
   <script src="{% static 'js/chart.umd.min.js' %}"></script>
   <script src="{% static 'js/htmx.min.js' %}"></script>
   <script src="{% static 'js/lucide.min.js' %}"></script>
+  <script src="{% static 'js/bootstrap-5.3.3.bundle.min.js' %}"></script>
   <script src="{% static 'js/main.js' %}"></script>
   <script>
     // HTMX replaces chart HTML without a full page load, so Lucide icons must
