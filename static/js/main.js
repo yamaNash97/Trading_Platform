@@ -6,12 +6,14 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDarkTheme();
     setupAnimations();
     setupInteractivity();
+    initializeStrategyForms(document);
     setupChartDefaults();
     initializeMarketCharts(document);
     setupAutoDismissAlerts(document);
 });
 
 document.body.addEventListener('htmx:afterSwap', function(event) {
+    initializeStrategyForms(event.target);
     initializeMarketCharts(event.target);
     setupAutoDismissAlerts(event.target);
     setupTooltips();
@@ -169,6 +171,52 @@ function addShakeAnimation(element) {
     setTimeout(() => {
         element.style.animation = '';
     }, 400);
+}
+
+// ========================================
+// STRATEGY FORM
+// ========================================
+
+function initializeStrategyForms(root) {
+    const scope = root || document;
+    const forms = [];
+
+    if (scope.nodeType === 1 && scope.matches('[data-strategy-form]')) {
+        forms.push(scope);
+    }
+    if (scope.querySelectorAll) {
+        scope.querySelectorAll('[data-strategy-form]').forEach(form => forms.push(form));
+    }
+
+    forms.forEach(form => {
+        if (form.dataset.strategyFormInitialized === 'true') {
+            return;
+        }
+
+        const typeSelect = form.querySelector('[name="strategy_type"]');
+        if (!typeSelect) {
+            return;
+        }
+
+        const updateFields = () => updateStrategyFields(form, typeSelect.value);
+        typeSelect.addEventListener('change', updateFields);
+        form.dataset.strategyFormInitialized = 'true';
+        updateFields();
+    });
+}
+
+function updateStrategyFields(form, strategyType) {
+    form.querySelectorAll('[data-strategy-fields]').forEach(group => {
+        const fieldType = group.dataset.strategyFields;
+        const isVisible = strategyType === 'combined'
+            || strategyType === fieldType;
+
+        group.hidden = !isVisible;
+        group.querySelectorAll('input, select, textarea').forEach(input => {
+            input.disabled = !isVisible;
+            input.required = isVisible;
+        });
+    });
 }
 
 // ========================================

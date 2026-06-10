@@ -13,12 +13,19 @@ base.html/main.js.
   <div class="col-lg-8">
     <div class="card border-0 shadow-sm p-3">
       <h1 class="h4 mb-3">New strategy</h1>
-      <form method="post">
+      <form method="post" data-strategy-form>
         {% csrf_token %}
         {# Two-column Bootstrap grid keeps many strategy fields readable on desktop. #}
         <div class="row">
           {% for field in form %}
-            <div class="col-md-6">
+            <div
+              class="col-md-6"
+              {% if field.name == "short_window" or field.name == "long_window" %}
+                data-strategy-fields="moving_average"
+              {% elif field.name == "rsi_period" or field.name == "rsi_buy_threshold" or field.name == "rsi_sell_threshold" %}
+                data-strategy-fields="rsi"
+              {% endif %}
+            >
               {# Show each field error near the input that caused it. #}
               {{ field.errors }}
               <p>{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="form-text">{{ field.help_text }}</span>{% endif %}</p>
@@ -30,6 +37,9 @@ base.html/main.js.
           <button class="btn btn-success" type="submit"><i data-lucide="save"></i> Save strategy</button>
         </div>
       </form>
+      <noscript>
+        <p class="form-text mt-3 mb-0">JavaScript is disabled, so all indicator fields are shown. Only fields used by the selected strategy are applied.</p>
+      </noscript>
     </div>
   </div>
 </div>
