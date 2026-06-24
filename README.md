@@ -47,7 +47,29 @@ This repository includes `render.yaml` and `build.sh` for Render.
 The project includes `.python-version` with Python 3.13 so Render uses a Django 6 compatible runtime. The free Render PostgreSQL plan is good for demos, but free databases expire after 30 days.
 The migration command is part of the Start Command because Render's Pre-Deploy Command is not available on the free tier.
 
-After the first deploy, create an admin user from the Render Shell:
+The Blueprint runs `ensure_superuser` during startup. Set
+`DJANGO_SUPERUSER_PASSWORD` in Render before deploying if you want the
+configured admin account to be created automatically.
+
+### Replacing an expired free database
+
+If deployment fails with `failed to resolve host 'dpg-...'`, the free Render
+PostgreSQL database has probably expired or been deleted. Free databases expire
+30 days after creation.
+
+The database resource name in `render.yaml` is date-versioned so a Blueprint
+sync can create a fresh database and update `DATABASE_URL` automatically:
+
+1. Open the Blueprint in the Render Dashboard.
+2. Sync the latest `render.yaml`.
+3. Approve creation of the new database and redeployment of the web service.
+4. Confirm the deploy log shows migrations completing before Gunicorn starts.
+
+The replacement database is empty. To preserve data from an expired database,
+upgrade that database to a paid instance during Render's 14-day grace period
+instead, then keep `DATABASE_URL` connected to it.
+
+To create a different admin user manually, use the Render Shell:
 
 ```bash
 python manage.py createsuperuser
